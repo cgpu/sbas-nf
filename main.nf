@@ -85,12 +85,14 @@ if (params.tissues_csv.endsWith(".csv")) {
     each file(fData) from ch_fData
 
     output:
-    file "*" 
+    file "output.ipynb"
 
     script:
     """
     ls *
     cd /hello-papermill/
     papermill main.ipynb output.ipynb -p name "Octocat"
+    cd -
+    mv /hello-papermill/ output.ipynb
     """
 }
