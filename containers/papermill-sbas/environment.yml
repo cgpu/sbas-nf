@@ -1,0 +1,28 @@
+name: base
+channels:
+  - conda-forge
+  - defaults
+  - bioconda
+dependencies:
+  - papermill
+  - jupytext
+  - nbdime
+  - r-base
+  - r-r.oo
+  - r-dorng
+  - r-statmod
+  - r-foreach
+  - r-foreach
+  - r-r.utils
+  - r-stringi
+  - r-devtools
+  - r-irkernel
+  - r-pheatmap
+  - r-snakecase
+  - r-doparallel
+  - r-data.table
+  - r-r.methodss3
+  - bioconductor-edger
+  - bioconductor-limma
+  - bioconductor-biobase
+  - bioconductor-multtest
