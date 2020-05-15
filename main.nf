@@ -74,7 +74,7 @@ if (params.tissues_csv.endsWith(".csv")) {
 
  process runNotebook {
     tag "${tissue_index}-${tissue_name}"
-    publishDir "${params.outdir}/"
+    publishDir "results/${tissue_name}"
     echo true
 
     input:
@@ -85,14 +85,20 @@ if (params.tissues_csv.endsWith(".csv")) {
     each file(fData) from ch_fData
 
     output:
-    file "output.ipynb"
+    file "/sbas/data/data/*"
+    file "/sbas/data/jupyter/${tissue_name}_diff_splicing.ipynb"
 
     script:
     """
+    mv $ijc /sbas/data/
+    mv $scj /sbas/data/
+    mv $fData /sbas/data/
+    mv $pData /sbas/data/
+
+
     ls *
-    cd /hello-papermill/
-    papermill main.ipynb output.ipynb -p name "Octocat"
-    cd -
-    mv /hello-papermill/ output.ipynb
+
+    cd /hello-sbas/jupyter
+    papermill AllTissueJunctionAnalysis.ipynb ${tissue_name}_diff_splicing.ipynb -p tissue_index $tissue_index
     """
 }
