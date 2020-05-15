@@ -90,7 +90,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     script:
     """
     ls *
-    cd hello-papermill/
+    cd /hello-papermill/
     papermill main.ipynb output.ipynb -p name "Octocat"
     """
 }
