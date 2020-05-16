@@ -74,7 +74,7 @@ if (params.tissues_csv.endsWith(".csv")) {
 
  process runNotebook {
     tag "${tissue_index}-${tissue_name}"
-    publishDir "results/${tissue_name}"
+    publishDir "results/${tissue_name}/"
     echo true
 
     input:
@@ -85,20 +85,24 @@ if (params.tissues_csv.endsWith(".csv")) {
     each file(fData) from ch_fData
 
     output:
-    file "/sbas/data/data/*"
-    file "/sbas/data/jupyter/${tissue_name}_diff_splicing.ipynb"
+    file "data/*"
+    file "jupyter/${tissue_name}_diff_splicing.ipynb"
 
     script:
     """
-    mv $ijc /sbas/data/
-    mv $scj /sbas/data/
-    mv $fData /sbas/data/
-    mv $pData /sbas/data/
+    mkdir jupyter
+    mkdir data
 
+    cp /opt/conda/envs/sbas/jupyter/AllTissueJunctionAnalysis.ipynb jupyter/main.ipynb
+
+    mv $ijc data/
+    mv $scj data/
+    mv $fData data/
+    mv $pData data/
 
     ls *
+    cd jupyter
 
-    cd /sbas/jupyter
-    papermill AllTissueJunctionAnalysis.ipynb ${tissue_name}_diff_splicing.ipynb -p tissue_index $tissue_index
+    papermill main.ipynb ${tissue_name}_diff_splicing.ipynb -p tissue_index $tissue_index
     """
 }
