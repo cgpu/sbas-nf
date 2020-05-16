@@ -98,7 +98,7 @@ if (params.tissues_csv.endsWith(".csv")) {
 
     ls *
 
-    cd /hello-sbas/jupyter
+    cd /sbas/jupyter
     papermill AllTissueJunctionAnalysis.ipynb ${tissue_name}_diff_splicing.ipynb -p tissue_index $tissue_index
     """
 }
