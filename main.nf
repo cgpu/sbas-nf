@@ -85,7 +85,9 @@ if (params.tissues_csv.endsWith(".csv")) {
     each file(fData) from ch_fData
 
     output:
-    file "data/"
+    file "data/*_universe.txt"
+    file "data/*_gene_set.txt"
+    file "data/*csv"
     file "pdf/"
     file "metadata/"
     file "jupyter/${tissue_name}_diff_splicing.ipynb"
