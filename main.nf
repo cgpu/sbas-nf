@@ -75,7 +75,6 @@ if (params.tissues_csv.endsWith(".csv")) {
  process runNotebook {
     tag "${tissue_index}-${tissue_name}"
     publishDir "results/${tissue_name}/"
-    echo true
 
     input:
     set val(tissue_index), val(tissue_name) from ch_tissues_indices
@@ -107,7 +106,6 @@ if (params.tissues_csv.endsWith(".csv")) {
     mv $fData data/
     mv $pData data/
 
-    ls *
     cd jupyter
 
     papermill main.ipynb ${tissue_name}_diff_splicing.ipynb -p tissue_index $tissue_index
