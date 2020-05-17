@@ -85,13 +85,18 @@ if (params.tissues_csv.endsWith(".csv")) {
     each file(fData) from ch_fData
 
     output:
-    file "data/*"
+    file "data/"
+    file "pdf/"
+    file "metadata/"
     file "jupyter/${tissue_name}_diff_splicing.ipynb"
+    
 
     script:
     """
-    mkdir jupyter
-    mkdir data
+    mkdir -p jupyter
+    mkdir -p data
+    mkdir -p pdf
+    mkdir -p metadata
 
     cp /opt/conda/envs/sbas/jupyter/AllTissueJunctionAnalysis.ipynb jupyter/main.ipynb
 
