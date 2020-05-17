@@ -73,6 +73,7 @@ if (params.tissues_csv.endsWith(".csv")) {
  */
 
  process runNotebook {
+    machineType 'n1-standard-16'
     tag "${tissue_index}-${tissue_name}"
     publishDir "results/${tissue_name}/"
 
