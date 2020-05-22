@@ -102,6 +102,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     mkdir -p data
     mkdir -p pdf
     mkdir -p metadata
+    mkdir -p assets
 
     cp /opt/conda/envs/sbas/jupyter/AllTissueJunctionAnalysis.ipynb jupyter/main.ipynb
 
