@@ -17,6 +17,7 @@ log.info "Input ijc matrix  : ${params.ijc}"
 log.info "Input sjc matrix  : ${params.sjc}"
 log.info "Pheno metadata    : ${params.pData}"
 log.info "Feature metadata  : ${params.fData}"
+log.info "Assets file       : ${params.assets}"
 log.info "Results directory : ${params.output}"
 log.info "\n"
 
@@ -54,6 +55,7 @@ ch_ijc   = Channel.fromPath(params.ijc, checkIfExists: true)
 ch_sjc   = Channel.fromPath(params.sjc, checkIfExists: true)
 ch_pData = Channel.fromPath(params.pData, checkIfExists: true)
 ch_fData = Channel.fromPath(params.fData, checkIfExists: true)
+ch_assets = Channel.fromPath(params.assets, checkIfExists: true)
 
 
 // Input list .csv file of many .tar.gz
@@ -83,6 +85,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     each file(scj) from ch_sjc
     each file(pData) from ch_pData
     each file(fData) from ch_fData
+    each file(assets) from ch_assets
 
     output:
     file "data/*_universe.txt"
@@ -106,7 +109,8 @@ if (params.tissues_csv.endsWith(".csv")) {
     mv $scj data/
     mv $fData data/
     mv $pData data/
-
+    mv $assets assets/
+    
     cd jupyter
 
     papermill main.ipynb ${tissue_name}_diff_splicing.ipynb -p tissue_index $tissue_index
