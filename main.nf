@@ -13,8 +13,8 @@
 log.info "Post-rmats differential splicing analysis version 0.1"
 log.info "====================================="
 log.info "Tissue table .csv : ${params.tissues_csv}"
-log.info "Input ijc matrix  : ${params.ijc}"
-log.info "Input sjc matrix  : ${params.sjc}"
+log.info "Input notebook    : ${params.notebook}"
+log.info "Input data.tar.gz  : ${params.sjc}"
 log.info "Pheno metadata    : ${params.pData}"
 log.info "Feature metadata  : ${params.fData}"
 log.info "Results directory : ${params.output}"
@@ -30,15 +30,22 @@ def helpMessage() {
                                 The csv file is expected to have two columns with header
                                 Column 1, must be a numeric index of the row
                                 Column 2, must correspond to the name of the tissue
+                                The order is expected to be the same as the output of the command:
+                                `levels(reduced_metadata_pData$tissue)`
 
-      --ijc                     The rmats ijc output matrix for all samples (eg. SraRunTable.noCram.noExome.noWGS.totalRNA.txt)
-      --sjc                     The rmats sjc output matrix for all samples (eg. SraRunTable.noCram.noExome.noWGS.totalRNA.txt)
-      --pData                   The phenotypic metadata for the samples present in the rmats matrices (eg. SraRunTable.noCram.noExome.noWGS.totalRNA.txt)
-      --fData                   The feature metadata for the features (exons) present in the rmats matrices (eg. fromGTF.SE.txt)
+      --notebook                The path to the .ipynb notebook that is to be executed
+      --data                    The path to the .tar.gz archive that contains all the files used as input by the notebook from the ../data folder.
+                                It is expected that upon decompressing the archive with the command `tar xvzf data.tar.gz -C ../data`
+                                all input files will be in the required format for the notebook to run,
+                                eg. flat file structure, and not nested in another folder.
+      --assets                  The path to the .tar.gz archive that contains all the files used as input by the notebook from the ../assets folder.
+                                It is expected that upon decompressing the archive with the command `tar xvzf data.tar.gz -C ../assets`
+                                all input files will be in the required format for the notebook to run,
+                                eg. flat file structure, and not nested in another folder.
       -profile                  Configuration profile to use. Can use multiple (comma separated)
                                 Available: testdata, docker, ...
     Optional:
-      --output                   Path to output directory. 
+      --output                  Path to output directory.
                                 Default: 'results'
 
     """.stripIndent()
@@ -50,13 +57,11 @@ def helpMessage() {
 
 // Input files
 
-ch_ijc   = Channel.fromPath(params.ijc, checkIfExists: true)
-ch_sjc   = Channel.fromPath(params.sjc, checkIfExists: true)
-ch_pData = Channel.fromPath(params.pData, checkIfExists: true)
-ch_fData = Channel.fromPath(params.fData, checkIfExists: true)
+ch_notebook = Channel.fromPath(params.notebook, checkIfExists: true)
+ch_data = Channel.fromPath(params.data, checkIfExists: true)
+ch_assets = Channel.fromPath(params.assets, checkIfExists: true)
 
-
-// Input list .csv file of many .tar.gz
+// Input list .csv file of tissues to analyse
 if (params.tissues_csv.endsWith(".csv")) {
   Channel.fromPath(params.tissues_csv)
                         .ifEmpty { exit 1, "Input .csv list of input tissues not found at ${params.tissues_csv}. Is the file path correct?" }
@@ -79,10 +84,9 @@ if (params.tissues_csv.endsWith(".csv")) {
 
     input:
     set val(tissue_index), val(tissue_name) from ch_tissues_indices
-    each file(ijc) from ch_ijc
-    each file(scj) from ch_sjc
-    each file(pData) from ch_pData
-    each file(fData) from ch_fData
+    each file(notebook) from ch_notebook
+    each file(data) from ch_data
+    each file(assets) from ch_assets
 
     output:
     file "data/*_universe.txt"
@@ -90,8 +94,8 @@ if (params.tissues_csv.endsWith(".csv")) {
     file "data/*csv"
     file "pdf/"
     file "metadata/"
+    file "assets/"
     file "jupyter/${tissue_name}_diff_splicing.ipynb"
-    
 
     script:
     """
@@ -99,14 +103,12 @@ if (params.tissues_csv.endsWith(".csv")) {
     mkdir -p data
     mkdir -p pdf
     mkdir -p metadata
+    mkdir -p assets
 
-    cp /opt/conda/envs/sbas/jupyter/AllTissueJunctionAnalysis.ipynb jupyter/main.ipynb
+    tar xvzf $data -C ../data
+    tar xvzf $assets -C ../assets
 
-    mv $ijc data/
-    mv $scj data/
-    mv $fData data/
-    mv $pData data/
-
+    cp $notebook jupyter/main.ipynb
     cd jupyter
 
     papermill main.ipynb ${tissue_name}_diff_splicing.ipynb -p tissue_index $tissue_index
