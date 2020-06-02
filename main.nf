@@ -24,7 +24,7 @@ def helpMessage() {
     log.info """
     Usage:
     The typical command for running the pipeline is as follows:
-    nextflow run TheJacksonLaboratory/sbas --tissues_csv file1 --ijc file2 --sjc file3 --pData file4 --fData file5 -profile docker
+    nextflow run cgpu/sbas-nf --tissues_csv file1 --notebook gs://my_R_notebook.ipynb --data gs://data.tar.gz --assets gs://assets.tar.gz -profile docker
     Mandatory arguments:
       --tissues_csv             Path to input file. The suffix of the file must be .csv
                                 The csv file is expected to have two columns with header
