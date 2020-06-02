@@ -104,8 +104,8 @@ if (params.tissues_csv.endsWith(".csv")) {
     mkdir -p metadata
     mkdir -p assets
 
-    tar xvzf $data -C ../data
-    tar xvzf $assets -C ../assets
+    tar xvzf $data -C data/
+    tar xvzf $assets -C assets/
 
     cp $notebook jupyter/main.ipynb
     cd jupyter
