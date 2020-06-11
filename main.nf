@@ -112,8 +112,10 @@ if (params.tissues_csv.endsWith(".csv")) {
     mv $pData data/
     mv $assets assets/
     
-    cd jupyter
+    tar xvzf data/DGE_gene_csv.tar.gz -C data/
 
+    cd jupyter
+    
     papermill main.ipynb ${tissue_name}_diff_splicing.ipynb -p tissue_index $tissue_index
     """
 }
