@@ -106,7 +106,6 @@ if (params.tissues_csv.endsWith(".csv")) {
 
     tar xvzf $data -C data/
     tar xvzf $assets -C assets/
-    tar xvzf data/DGE_gene_csv*tar.gz  -C data/
 
     cp $notebook jupyter/main.ipynb
     cd jupyter
