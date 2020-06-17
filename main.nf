@@ -14,9 +14,8 @@ log.info "Post-rmats differential splicing analysis version 0.1"
 log.info "====================================="
 log.info "Tissue table .csv : ${params.tissues_csv}"
 log.info "Input notebook    : ${params.notebook}"
-log.info "Input data.tar.gz  : ${params.sjc}"
-log.info "Pheno metadata    : ${params.pData}"
-log.info "Feature metadata  : ${params.fData}"
+log.info "../data/ tar.gz   : ${params.data}"
+log.info "../assets/ tar.gz : ${params.assets}"
 log.info "Results directory : ${params.output}"
 log.info "\n"
 
@@ -24,7 +23,7 @@ def helpMessage() {
     log.info """
     Usage:
     The typical command for running the pipeline is as follows:
-    nextflow run TheJacksonLaboratory/sbas --tissues_csv file1 --ijc file2 --sjc file3 --pData file4 --fData file5 -profile docker
+    nextflow run cgpu/sbas-nf --tissues_csv file1 --notebook gs://my_R_notebook.ipynb --data gs://data.tar.gz --assets gs://assets.tar.gz -profile docker
     Mandatory arguments:
       --tissues_csv             Path to input file. The suffix of the file must be .csv
                                 The csv file is expected to have two columns with header
@@ -105,8 +104,9 @@ if (params.tissues_csv.endsWith(".csv")) {
     mkdir -p metadata
     mkdir -p assets
 
-    tar xvzf $data -C ../data
-    tar xvzf $assets -C ../assets
+    tar xvzf $data -C data/
+    tar xvzf $assets -C assets/
+    tar xvzf data/DGE_gene_csv.tar.gz -C data/
 
     cp $notebook jupyter/main.ipynb
     cd jupyter
