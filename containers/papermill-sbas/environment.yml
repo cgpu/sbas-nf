@@ -7,22 +7,31 @@ dependencies:
   - papermill
   - jupytext
   - nbdime
-  - r-base
+  - libgcc
+  - r-git2r
   - r-r.oo
   - r-dorng
   - r-statmod
   - r-foreach
   - r-foreach
   - r-r.utils
-  - r-stringi
+  - r::r-stringi
   - r-devtools
   - r-irkernel
   - r-pheatmap
   - r-snakecase
   - r-doparallel
   - r-data.table
+  - r-tibble
+  - r-rlang
+  - r-downloader
+  - r-dbi
+  - r-readr
   - r-r.methodss3
+  - r-gprofiler2
   - bioconductor-edger
   - bioconductor-limma
   - bioconductor-biobase
   - bioconductor-multtest
+  - bioconductor-biomart
+  - r-statmod

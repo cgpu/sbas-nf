@@ -3,12 +3,24 @@ FROM nfcore/base:1.9
 LABEL authors="Christina Chatzipantsiou <chatzipantsiou@gmail.com>" \
       description="Docker image containing dependencies for the TheJacksonLaboratory/sbas analysis"
 
-ADD hello-papermill /hello-papermill
+RUN apt-get update -y && \
+    apt-get install --no-install-recommends -y \
+    nano \
+    procps \
+    zlib1g-dev \
+    libzmq3-dev \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    jupyter-core \
+    jupyter-client && \
+    apt-get clean -y && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY environment.yml /
 COPY install.R /
 
-RUN conda env update --name base --file /environment.yml &&  \
+RUN conda install r-base r-devtools r-biocmanager -y && \
+    conda env update --name base --file /environment.yml &&  \
     Rscript /install.R && \
     conda clean -a
 
