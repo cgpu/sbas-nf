@@ -157,12 +157,14 @@ if (params.tissues_csv.endsWith(".csv")) {
     script:
     """
     ontologizer \
-    -s $gene_set \
-    -p $universe \
-    -g $go.obo \
-    -a $goa_human.gaf \
-    -c Term-For-Term \
-    -m Benjamini-Hochberg \
-    -n
+    --studyset $gene_set \
+    --population $universe \
+    --go $go.obo \
+    --association $goa_human.gaf \
+    --calculation Term-For-Term \
+    --mtc Benjamini-Hochberg \
+    --outdir ${tissue} \
+    --annotation \
+    --dot \
     """
 }
