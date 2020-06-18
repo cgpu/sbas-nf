@@ -107,7 +107,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     each file(assets) from ch_assets
 
     output:
-    set val(tissue_name), file "data/*_gene_set.txt", file("data/*_universe.txt") into ch_ontologizer
+    set val(tissue_name), file "data/se*sex_as_events_gene_set.txt", file("data/se*sex_as_events_universe.txt") into ch_ontologizer
     file "data/*_universe.txt"
     file "data/*_gene_set.txt"
     file "data/*csv"
