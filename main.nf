@@ -72,11 +72,8 @@ ch_assets = Channel.fromPath(params.assets, checkIfExists: true)
 
 // Optional Ontologizer input files
 
-if (params.ontologizer) {
-    ch_obo_file = Channel.fromPath(params.obo, checkIfExists: true)
-    ch_go_annotation_file = Channel.fromPath(params.gaf, checkIfExists: true)
-}
-
+ch_obo_file = params.ontologizer ? Channel.fromPath(params.obo, checkIfExists: true) :  Channel.empty()
+ch_go_annotation_file = params.ontologizer ?  Channel.fromPath(params.gaf, checkIfExists: true) :  Channel.empty()
 
 // Input list .csv file of tissues to analyse
 if (params.tissues_csv.endsWith(".csv")) {
