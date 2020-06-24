@@ -156,8 +156,8 @@ if (params.tissues_csv.endsWith(".csv")) {
     ontologizer \
     --studyset $gene_set \
     --population $universe \
-    --go $go.obo \
-    --association $goa_human.gaf \
+    --go $go_obo \
+    --association $goa_human_gaf \
     --calculation Term-For-Term \
     --mtc Benjamini-Hochberg \
     --outdir ${tissue} \
