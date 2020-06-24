@@ -144,7 +144,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     input:
     set  val(tissue), file(gene_set), file(universe) from ch_ontologizer
     each file(go_obo) from ch_obo_file
-    each file(goa_human.gaf) from ch_go_annotation_file
+    each file(goa_human_gaf) from ch_go_annotation_file
 
     output:
     file "*"
