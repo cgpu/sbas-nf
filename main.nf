@@ -183,9 +183,9 @@ ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_
     each file(goa_human_gaf) from ch_go_annotation_file
 
     output:
-    file('view*.dot') into ch_ontologizer_dag
-    file('table*.txt') into ch_ontologizer_table
-    file('anno*.txt') into ch_ontologizer_anno
+    file("${tissue}/view*.dot") into ch_ontologizer_dag
+    file("${tissue}/table*.txt") into ch_ontologizer_table
+    file("${tissue}/anno*.txt") into ch_ontologizer_anno
 
     when:  params.ontologizer
 
