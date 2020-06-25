@@ -175,6 +175,7 @@ ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_
     tag "${tissue}-${as_type}"
     label 'ontologizer'
     publishDir "results/ontologizer/${as_type}"
+    echo true
 
     input:
     set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_ontologizer
@@ -200,6 +201,8 @@ ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_
     --outdir ${tissue} \
     --annotation \
     --dot \
+
+    ls -l *
     """
 }
 
