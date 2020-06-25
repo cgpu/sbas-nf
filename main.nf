@@ -140,7 +140,8 @@ if (params.tissues_csv.endsWith(".csv")) {
 }
 
 ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_mxe, ch_ontologizer_ri, ch_ontologizer_se)
-ch_ontologizer.view()
+ch_ontologizer.into(ch_ontologizer, ch_ontologizer_inspect)
+ch_ontologizer_inspect.view()
 
 /*
  * Create combined gene_set and universe from union of AS types for Ontologizer
