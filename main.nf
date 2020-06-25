@@ -140,8 +140,7 @@ if (params.tissues_csv.endsWith(".csv")) {
 }
 
 ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_mxe, ch_ontologizer_ri, ch_ontologizer_se)
-ch_ontologizer.into(ch_ontologizer, ch_ontologizer_inspect)
-ch_ontologizer_inspect.view()
+ch_ontologizer.view()
 
 /*
  * Create combined gene_set and universe from union of AS types for Ontologizer
@@ -166,37 +165,37 @@ ch_ontologizer_inspect.view()
 }
 
 
-/*
- * Perform Gene Ontology analysis with Ontologizer
- */
+// /*
+//  * Perform Gene Ontology analysis with Ontologizer
+//  */
 
- process ontologizer {
-    tag "${tissue}-${as_type}"
-    label 'ontologizer'
-    publishDir "results/ontologizer/per_tissue/${tissue}/${as_type}"
-    publishDir "results/ontologizer/all_tissues/"
+//  process ontologizer {
+//     tag "${tissue}-${as_type}"
+//     label 'ontologizer'
+//     publishDir "results/ontologizer/per_tissue/${tissue}/${as_type}"
+//     publishDir "results/ontologizer/all_tissues/"
 
-    input:
-    set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_ontologizer
-    each file(go_obo) from ch_obo_file
-    each file(goa_human_gaf) from ch_go_annotation_file
+//     input:
+//     set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_ontologizer
+//     each file(go_obo) from ch_obo_file
+//     each file(goa_human_gaf) from ch_go_annotation_file
 
-    output:
-    file "*"
+//     output:
+//     file "*"
 
-    when:  params.ontologizer
+//     when:  params.ontologizer
 
-    script:
-    """
-    ontologizer \
-    --studyset $gene_set \
-    --population $universe \
-    --go $go_obo \
-    --association $goa_human_gaf \
-    --calculation Term-For-Term \
-    --mtc Benjamini-Hochberg \
-    --outdir ${tissue} \
-    --annotation \
-    --dot \
-    """
-}
+//     script:
+//     """
+//     ontologizer \
+//     --studyset $gene_set \
+//     --population $universe \
+//     --go $go_obo \
+//     --association $goa_human_gaf \
+//     --calculation Term-For-Term \
+//     --mtc Benjamini-Hochberg \
+//     --outdir ${tissue} \
+//     --annotation \
+//     --dot \
+//     """
+// }
