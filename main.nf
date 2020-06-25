@@ -64,6 +64,11 @@ def helpMessage() {
  *      CHANNELS SETUP           *
  *********************************/
 
+// Helper variables
+alternativeSplicingTypeList = ['a3ss', 'a5ss', 'mxe', 'ri', 'se']
+junctionCountTypeList       = ['jc','jcec']
+countingTypeList            = ['ijc','sjc','inc','inclen','skiplen']
+
 // Input files
 
 ch_notebook = Channel.fromPath(params.notebook, checkIfExists: true)
@@ -104,9 +109,12 @@ if (params.tissues_csv.endsWith(".csv")) {
     each file(assets) from ch_assets
 
     output:
-    set val(tissue_name), file("data/se*sex_as_events_gene_set.txt"), file("data/se*sex_as_events_universe.txt") into ch_ontologizer
-    file "data/*_universe.txt"
-    file "data/*_gene_set.txt"
+    set val(tissue_name), val('a3ss'), file("data/a3ss*sex_as_events_gene_set.txt"), file("data/a3ss*sex_as_events_universe.txt") into ch_ontologizer_a3ss
+    set val(tissue_name), val('a5ss'), file("data/a5ss*sex_as_events_gene_set.txt"), file("data/a5ss*sex_as_events_universe.txt") into ch_ontologizer_a5ss
+    set val(tissue_name), val('mxe'),  file("data/mxe*sex_as_events_gene_set.txt"),  file("data/mxe*sex_as_events_universe.txt")  into ch_ontologizer_mxe
+    set val(tissue_name), val('ri'),   file("data/ri*sex_as_events_gene_set.txt"),   file("data/ri*sex_as_events_universe.txt")   into ch_ontologizer_ri
+    set val(tissue_name), val('se'),   file("data/se*sex_as_events_gene_set.txt"),   file("data/se*sex_as_events_universe.txt")   into ch_ontologizer_se
+    set val(tissue_name), val('all_as_types'), file("data/*_universe.txt"), file("data/*_gene_set.txt") into ch_all_as_types_ontol_inputs
     file "data/*csv"
     file "pdf/"
     file "metadata/"
@@ -131,18 +139,47 @@ if (params.tissues_csv.endsWith(".csv")) {
     """
 }
 
+ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_mxe, ch_ontologizer_ri, ch_ontologizer_se)
+ch_ontologizer.view()
+
+/*
+ * Create combined gene_set and universe from union of AS types for Ontologizer
+ */
+
+ process createAStypeUnions {
+    tag "${tissue}-${as_type}"
+    echo true
+
+    input:
+    file(universe) from ch_universes
+    file(geneset) from ch_genesets
+
+    set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_all_as_types_ontol_inputs
+
+    output:
+    file "*"
+
+    when:  params.ontologizer
+
+    script:
+    """
+    ls -l *
+    """
+}
+
+
 /*
  * Perform Gene Ontology analysis with Ontologizer
  */
 
  process ontologizer {
-    tag "${tissue}"
+    tag "${tissue}-${as_type}"
     label 'ontologizer'
-    publishDir "results/ontologizer/per_tissue/${tissue}/"
+    publishDir "results/ontologizer/per_tissue/${tissue}/${as_type}"
     publishDir "results/ontologizer/all_tissues/"
 
     input:
-    set  val(tissue), file(gene_set), file(universe) from ch_ontologizer
+    set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_ontologizer
     each file(go_obo) from ch_obo_file
     each file(goa_human_gaf) from ch_go_annotation_file
 
