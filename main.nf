@@ -139,8 +139,6 @@ if (params.tissues_csv.endsWith(".csv")) {
     """
 }
 
-ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_mxe, ch_ontologizer_ri, ch_ontologizer_se)
-ch_ontologizer.view()
 
 /*
  * Create combined gene_set and universe from union of AS types for Ontologizer
@@ -154,16 +152,20 @@ ch_ontologizer.view()
     set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_all_as_types_ontol_inputs
 
     output:
-    file "*"
+    set  val(tissue), val(as_type), file("${as_type}_${tissue}_${params.model}_gene_set.txt"), file("${as_type}_${tissue}_${params.model}_universe.txt") into ch_ontologizer_combined_as
 
     when:  params.ontologizer
 
     script:
     """
+    ls *.* | grep $tissue | grep universe | grep ${params.model} | xargs cat | sort | uniq > ${as_type}_${tissue}_${params.model}_universe.txt
+    ls *.* | grep $tissue | grep gene_set | grep ${params.model} | xargs cat | sort | uniq > ${as_type}_${tissue}_${params.model}_gene_set.txt
     ls -l *
     """
 }
 
+ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_mxe, ch_ontologizer_ri, ch_ontologizer_se, ch_ontologizer_combined_as)
+ch_ontologizer.view()
 
 // /*
 //  * Perform Gene Ontology analysis with Ontologizer
