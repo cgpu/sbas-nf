@@ -151,9 +151,6 @@ ch_ontologizer.view()
     echo true
 
     input:
-    file(universe) from ch_universes
-    file(geneset) from ch_genesets
-
     set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_all_as_types_ontol_inputs
 
     output:
