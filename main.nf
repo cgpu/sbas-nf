@@ -109,12 +109,12 @@ if (params.tissues_csv.endsWith(".csv")) {
     each file(assets) from ch_assets
 
     output:
-    set val(tissue_name), val('a3ss'), file("data/a3ss*sex_as_events_gene_set.txt"), file("data/a3ss*sex_as_events_universe.txt") into ch_ontologizer_a3ss
-    set val(tissue_name), val('a5ss'), file("data/a5ss*sex_as_events_gene_set.txt"), file("data/a5ss*sex_as_events_universe.txt") into ch_ontologizer_a5ss
-    set val(tissue_name), val('mxe'),  file("data/mxe*sex_as_events_gene_set.txt"),  file("data/mxe*sex_as_events_universe.txt")  into ch_ontologizer_mxe
-    set val(tissue_name), val('ri'),   file("data/ri*sex_as_events_gene_set.txt"),   file("data/ri*sex_as_events_universe.txt")   into ch_ontologizer_ri
-    set val(tissue_name), val('se'),   file("data/se*sex_as_events_gene_set.txt"),   file("data/se*sex_as_events_universe.txt")   into ch_ontologizer_se
-    set val(tissue_name), val('all_as_types'), file("data/*_universe.txt"), file("data/*_gene_set.txt") into ch_all_as_types_ontol_inputs
+    set val(tissue_name), val('a3ss'), file("data/a3ss*${params.model}_gene_set.txt"), file("data/a3ss*${params.model}_universe.txt") into ch_ontologizer_a3ss
+    set val(tissue_name), val('a5ss'), file("data/a5ss*${params.model}_gene_set.txt"), file("data/a5ss*${params.model}_universe.txt") into ch_ontologizer_a5ss
+    set val(tissue_name), val('mxe'),  file("data/mxe*${params.model}_gene_set.txt"),  file("data/mxe*${params.model}_universe.txt")  into ch_ontologizer_mxe
+    set val(tissue_name), val('ri'),   file("data/ri*${params.model}_gene_set.txt"),   file("data/ri*${params.model}_universe.txt")   into ch_ontologizer_ri
+    set val(tissue_name), val('se'),   file("data/se*${params.model}_gene_set.txt"),   file("data/se*${params.model}_universe.txt")   into ch_ontologizer_se
+    set val(tissue_name), val('all_as_types'), file("data/*${params.model}*_universe.txt"), file("data/*${params.model}*_gene_set.txt") into ch_all_as_types_ontol_inputs
     file "data/*csv"
     file "pdf/"
     file "metadata/"
