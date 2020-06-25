@@ -199,7 +199,7 @@ ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_
     --mtc Benjamini-Hochberg \
     --outdir ${tissue} \
     --annotation \
-    --dot \
+    --dot
 
     ls -l *
     """
@@ -210,7 +210,6 @@ ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_
     publishDir "results/ontologizer/archives/"
 
     input:
-    file(dot) from ch_ontologizer_dag.collect()
     file(table) from ch_ontologizer_table.collect()
     file(anno) from ch_ontologizer_anno.collect()
 
@@ -222,32 +221,26 @@ ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_
     script:
     """
     # se
-    tar cvzf view-se.tar.gz view-se*
     tar cvzf anno-se.tar.gz anno-se*
     tar cvzf table-se.tar.gz table-se*
 
     # a3ss
-    tar cvzf view-a3ss.tar.gz view-a3ss*
     tar cvzf anno-a3ss.tar.gz anno-a3ss*
     tar cvzf table-a3ss.tar.gz table-a3ss*
 
     # a5ss
-    tar cvzf view-a5ss.tar.gz view-a5ss*
     tar cvzf anno-a5ss.tar.gz anno-a5ss*
     tar cvzf table-a5ss.tar.gz table-a5ss*
 
     # mxe
-    tar cvzf view-mxe.tar.gz view-mxe*
     tar cvzf anno-mxe.tar.gz anno-mxe*
     tar cvzf table-mxe.tar.gz table-mxe*
 
     # ri
-    tar cvzf view-ri.tar.gz view-ri*
     tar cvzf anno-ri.tar.gz anno-ri*
     tar cvzf table-ri.tar.gz table-ri*
 
     # all_as_types
-    tar cvzf view-all_as_types.tar.gz view-all_as_types*
     tar cvzf anno-all_as_types.tar.gz table-all_as_types*
     tar cvzf table-all_as_types.tar.gz table-all_as_types*
     """
