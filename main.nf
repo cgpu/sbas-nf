@@ -146,6 +146,7 @@ if (params.tissues_csv.endsWith(".csv")) {
 
  process createAStypeUnions {
     tag "${tissue}-${as_type}"
+    publishDir "results/AStypeUnions"
     echo true
 
     input:
@@ -165,39 +166,87 @@ if (params.tissues_csv.endsWith(".csv")) {
 }
 
 ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_mxe, ch_ontologizer_ri, ch_ontologizer_se, ch_ontologizer_combined_as)
-ch_ontologizer.view()
 
-// /*
-//  * Perform Gene Ontology analysis with Ontologizer
-//  */
+/*
+ * Perform Gene Ontology analysis with Ontologizer
+ */
 
-//  process ontologizer {
-//     tag "${tissue}-${as_type}"
-//     label 'ontologizer'
-//     publishDir "results/ontologizer/per_tissue/${tissue}/${as_type}"
-//     publishDir "results/ontologizer/all_tissues/"
+ process ontologizer {
+    tag "${tissue}-${as_type}"
+    label 'ontologizer'
+    publishDir "results/ontologizer/${as_type}"
 
-//     input:
-//     set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_ontologizer
-//     each file(go_obo) from ch_obo_file
-//     each file(goa_human_gaf) from ch_go_annotation_file
+    input:
+    set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_ontologizer
+    each file(go_obo) from ch_obo_file
+    each file(goa_human_gaf) from ch_go_annotation_file
 
-//     output:
-//     file "*"
+    output:
+    file("view*.txt") into ch_ontologizer_dag
+    file("table*.txt") into ch_ontologizer_table
+    file("anno*.txt") into ch_ontologizer_anno
 
-//     when:  params.ontologizer
+    when:  params.ontologizer
 
-//     script:
-//     """
-//     ontologizer \
-//     --studyset $gene_set \
-//     --population $universe \
-//     --go $go_obo \
-//     --association $goa_human_gaf \
-//     --calculation Term-For-Term \
-//     --mtc Benjamini-Hochberg \
-//     --outdir ${tissue} \
-//     --annotation \
-//     --dot \
-//     """
-// }
+    script:
+    """
+    ontologizer \
+    --studyset $gene_set \
+    --population $universe \
+    --go $go_obo \
+    --association $goa_human_gaf \
+    --calculation Term-For-Term \
+    --mtc Benjamini-Hochberg \
+    --outdir ${tissue} \
+    --annotation \
+    --dot \
+    """
+}
+
+ process createArchives {
+    label 'ontologizer'
+    publishDir "results/ontologizer/archives/"
+
+    input:
+    file(dot) from ch_ontologizer_dag.collect()
+    file(table) from ch_ontologizer_table.collect()
+    file(anno) from ch_ontologizer_anno.collect()
+
+    output:
+    file("*.tar.gz")
+
+    when:  params.ontologizer
+
+    script:
+    """
+    # se
+    tar cvzf view-se.tar.gz view-se*
+    tar cvzf anno-se.tar.gz anno-se*
+    tar cvzf table-se.tar.gz table-se*
+
+    # a3ss
+    tar cvzf view-a3ss.tar.gz view-a3ss*
+    tar cvzf anno-a3ss.tar.gz anno-a3ss*
+    tar cvzf table-a3ss.tar.gz table-a3ss*
+
+    # a5ss
+    tar cvzf view-a5ss.tar.gz view-a5ss*
+    tar cvzf anno-a5ss.tar.gz anno-a5ss*
+    tar cvzf table-a5ss.tar.gz table-a5ss*
+
+    # mxe
+    tar cvzf view-mxe.tar.gz view-mxe*
+    tar cvzf anno-mxe.tar.gz anno-mxe*
+    tar cvzf table-mxe.tar.gz table-mxe*
+
+    # ri
+    tar cvzf view-ri.tar.gz view-ri*
+    tar cvzf anno-ri.tar.gz anno-ri*
+    tar cvzf table-ri.tar.gz table-ri*
+
+    # all_as_types
+    tar cvzf view-all_as_types.tar.gz view-all_as_types*
+    tar cvzf anno-all_as_types.tar.gz table-all_as_types*
+    tar cvzf table-all_as_types.tar.gz table-all_as_types*
+    """
+}
