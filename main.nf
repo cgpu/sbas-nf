@@ -119,6 +119,8 @@ ch_all_as_types_ontol_inputs = Channel.empty()
     tag "${tissue_index}-${tissue_name}"
     publishDir "results/differential/per_tissue/${tissue_name}/"
     publishDir "results/differential/all_tissues/"
+    publishDir "results/differential/notebooks_rdata/" , pattern: '*.Rdata', saveAs: { filename -> "${tissue_name}_${params.analysis}_$filename" }
+    publishDir "results/differential/output_notebooks/", pattern: "*_${params.analysis}.ipynb"
     echo true
 
     input:
@@ -138,7 +140,7 @@ ch_all_as_types_ontol_inputs = Channel.empty()
     file "pdf/"
     file "metadata/"
     file "assets/"
-    file "jupyter/${tissue_name}_*.ipynb"
+    file "jupyter/${tissue_name}_${params.analysis}.ipynb" optional true
     file("jupyter/notebook.RData") optional true
 
     script:
@@ -155,9 +157,9 @@ ch_all_as_types_ontol_inputs = Channel.empty()
     cp $notebook jupyter/main.ipynb
     cd jupyter
 
-    papermill main.ipynb ${tissue_name}_${params.analysis}*.ipynb -p tissue_index $tissue_index
+    papermill main.ipynb ${tissue_name}_${params.analysis}.ipynb -p tissue_index $tissue_index
 
-    ls -l *
+    ls -l ../*
     """
 }
 
