@@ -53,7 +53,7 @@ def helpMessage() {
                                                      AS_model_A_sjc_wo_DGE_sex, AS_model_B_sex_as_events, AS_model_B_sex }
                                 Default: 'AS_model_B_sex_as_events'
 
-      NOTE:                     It is assumed that the limma::topTable() outputs have been written is csv files of the following pattern:
+      NOTE:                     It is assumed that the limma::topTable() outputs have been written as csv files of the following pattern:
                                 filename: {as_site_type} + '_' + {tissue} + '_' + {model} + '.csv'
                                 'tissue' can take values in the format: `r snakecase::to_snake_case(meta.data[['SMTSD']])` (GTEX metadata)
                                 'as_site_type' set of valid values: ['a3ss', 'a5ss', 'mxe', 'ri', 'se']
