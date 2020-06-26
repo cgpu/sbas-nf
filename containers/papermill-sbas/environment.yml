@@ -35,3 +35,9 @@ dependencies:
   - bioconductor-multtest
   - bioconductor-biomart
   - r-statmod
+  - r-ggplot2
+  - r-ggsci
+  - r-coda
+  - r-rstan
+  - r-rjags
+  - r-compute.es
