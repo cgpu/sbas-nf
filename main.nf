@@ -117,10 +117,9 @@ if (params.tissues_csv.endsWith(".csv")) {
  process runNotebook {
     machineType 'n1-standard-16'
     tag "${tissue_index}-${tissue_name}"
-    publishDir "results/differential/per_tissue/${tissue_name}/"
-    publishDir "results/differential/all_tissues/"
-    publishDir "results/differential/notebooks_rdata/" , pattern: '*.Rdata', saveAs: { filename -> "${tissue_name}_${params.analysis}_$filename" }
-    publishDir "results/differential/output_notebooks/", pattern: "*_${params.analysis}.ipynb"
+    publishDir "results/${params.analysis}/per_tissue/${tissue_name}/"
+    publishDir "results/${params.analysis}/notebooks_rdata/" , pattern: 'jupyter/*.Rdata', saveAs: { filename -> "${tissue_name}_${params.analysis}_$filename" }
+    publishDir "results/${params.analysis}/output_notebooks/", pattern: "jupyter/*_${params.analysis}.ipynb"
     echo true
 
     input:
@@ -154,7 +153,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     tar xvzf $data -C data/
     tar xvzf $assets -C assets/
 
-    cp $notebook jupyter/main.ipynb
+    mv $notebook jupyter/main.ipynb
     cd jupyter
 
     papermill main.ipynb ${tissue_name}_${params.analysis}.ipynb -p tissue_index $tissue_index
