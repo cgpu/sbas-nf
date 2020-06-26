@@ -172,9 +172,9 @@ ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_
  */
 
  process ontologizer {
-    tag "${tissue}-${as_type}"
+    tag "${as_type}-${tissue}"
     label 'ontologizer'
-    publishDir "results/ontologizer/${as_type}"
+    publishDir "results/ontologizer/files/${as_type}"
     echo true
 
     input:
@@ -207,7 +207,8 @@ ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_
 
  process createArchives {
     label 'ontologizer'
-    publishDir "results/ontologizer/archives/"
+    publishDir "results/ontologizer/archives/table", pattern: 'table-*.tar.gz'
+    publishDir "results/ontologizer/archives/annotation", pattern: 'anno-*.tar.gz'
 
     input:
     file(table) from ch_ontologizer_table.collect()
