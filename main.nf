@@ -119,6 +119,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     publishDir "results/differential/all_tissues/"
     publishDir "results/differential/notebooks_rdata/" , pattern: '*.Rdata', saveAs: { filename -> "${tissue_name}_${params.analysis}_$filename" }
     publishDir "results/differential/output_notebooks/", pattern: "*_${params.analysis}.ipynb"
+    echo true
 
     input:
     set val(tissue_index), val(tissue_name) from ch_tissues_indices
@@ -155,6 +156,8 @@ if (params.tissues_csv.endsWith(".csv")) {
     cd jupyter
 
     papermill main.ipynb ${tissue_name}_${params.analysis}.ipynb -p tissue_index $tissue_index
+
+    ls -l ../*
     """
 }
 
