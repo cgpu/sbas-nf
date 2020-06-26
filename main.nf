@@ -101,8 +101,8 @@ if (params.tissues_csv.endsWith(".csv")) {
     tag "${tissue_index}-${tissue_name}"
     publishDir "results/differential/per_tissue/${tissue_name}/"
     publishDir "results/differential/all_tissues/"
-    publishDir "results/differential/notebooks_rdata/" , pattern: '*.Rdata', saveAs: { filename -> "${tissue_name}_diff_splicing_$filename" }
-    publishDir "results/differential/output_notebooks/", pattern: '*_diff_splicing.ipynb'
+    publishDir "results/differential/notebooks_rdata/" , pattern: '*.Rdata', saveAs: { filename -> "${tissue_name}_${analysis}_$filename" }
+    publishDir "results/differential/output_notebooks/", pattern: "*_${analysis}.ipynb"
 
     input:
     set val(tissue_index), val(tissue_name) from ch_tissues_indices
@@ -111,17 +111,17 @@ if (params.tissues_csv.endsWith(".csv")) {
     each file(assets) from ch_assets
 
     output:
-    set val(tissue_name), val('a3ss'), file("data/a3ss*${params.model}_gene_set.txt"), file("data/a3ss*${params.model}_universe.txt") into ch_ontologizer_a3ss
-    set val(tissue_name), val('a5ss'), file("data/a5ss*${params.model}_gene_set.txt"), file("data/a5ss*${params.model}_universe.txt") into ch_ontologizer_a5ss
-    set val(tissue_name), val('mxe'),  file("data/mxe*${params.model}_gene_set.txt"),  file("data/mxe*${params.model}_universe.txt")  into ch_ontologizer_mxe
-    set val(tissue_name), val('ri'),   file("data/ri*${params.model}_gene_set.txt"),   file("data/ri*${params.model}_universe.txt")   into ch_ontologizer_ri
-    set val(tissue_name), val('se'),   file("data/se*${params.model}_gene_set.txt"),   file("data/se*${params.model}_universe.txt")   into ch_ontologizer_se
-    set val(tissue_name), val('all_as_types'), file("data/*${params.model}*_universe.txt"), file("data/*${params.model}*_gene_set.txt") into ch_all_as_types_ontol_inputs
+    set val(tissue_name), val('a3ss'), file("data/a3ss*${params.model}_gene_set.txt"), file("data/a3ss*${params.model}_universe.txt") optional true into ch_ontologizer_a3ss
+    set val(tissue_name), val('a5ss'), file("data/a5ss*${params.model}_gene_set.txt"), file("data/a5ss*${params.model}_universe.txt") optional true into ch_ontologizer_a5ss
+    set val(tissue_name), val('mxe'),  file("data/mxe*${params.model}_gene_set.txt"),  file("data/mxe*${params.model}_universe.txt")  optional true into ch_ontologizer_mxe
+    set val(tissue_name), val('ri'),   file("data/ri*${params.model}_gene_set.txt"),   file("data/ri*${params.model}_universe.txt")   optional true into ch_ontologizer_ri
+    set val(tissue_name), val('se'),   file("data/se*${params.model}_gene_set.txt"),   file("data/se*${params.model}_universe.txt")   optional true into ch_ontologizer_se
+    set val(tissue_name), val('all_as_types'), file("data/*${params.model}*_universe.txt"), file("data/*${params.model}*_gene_set.txt") optional true into ch_all_as_types_ontol_inputs
     file "data/*csv"
     file "pdf/"
     file "metadata/"
     file "assets/"
-    file "jupyter/${tissue_name}_diff_splicing.ipynb"
+    file "jupyter/${tissue_name}_${analysis}.ipynb"
     file("jupyter/notebook.RData") optional true
 
     script:
@@ -138,7 +138,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     cp $notebook jupyter/main.ipynb
     cd jupyter
 
-    papermill main.ipynb ${tissue_name}_diff_splicing.ipynb -p tissue_index $tissue_index
+    papermill main.ipynb ${tissue_name}_${analysis}.ipynb -p tissue_index $tissue_index
     """
 }
 
