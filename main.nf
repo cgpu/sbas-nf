@@ -101,6 +101,8 @@ if (params.tissues_csv.endsWith(".csv")) {
     tag "${tissue_index}-${tissue_name}"
     publishDir "results/differential/per_tissue/${tissue_name}/"
     publishDir "results/differential/all_tissues/"
+    publishDir "results/differential/notebooks_rdata/" , pattern: '*.Rdata', saveAs: { filename -> "${tissue_name}_diff_splicing_$filename" }
+    publishDir "results/differential/output_notebooks/", pattern: '*_diff_splicing.ipynb'
 
     input:
     set val(tissue_index), val(tissue_name) from ch_tissues_indices
@@ -120,6 +122,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     file "metadata/"
     file "assets/"
     file "jupyter/${tissue_name}_diff_splicing.ipynb"
+    file("jupyter/notebook.RData") optional true
 
     script:
     """
