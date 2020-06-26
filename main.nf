@@ -104,6 +104,8 @@ if (params.tissues_csv.endsWith(".csv")) {
                         .set { ch_tissues_indices }
   }
 
+ch_all_as_types_ontol_inputs = Channel.empty()
+
 /*********************************
  *          PROCESSES            *
  *********************************/
@@ -160,7 +162,6 @@ if (params.tissues_csv.endsWith(".csv")) {
     ls -l ../*
     """
 }
-
 
 /*
  * Create combined gene_set and universe from union of AS types for Ontologizer
