@@ -188,7 +188,7 @@ ch_all_as_types_ontol_inputs = Channel.empty()
     """
 }
 
-ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_mxe, ch_ontologizer_ri, ch_ontologizer_se, ch_ontologizer_combined_as)
+ch_ontologizer =  params.ontologizer ? ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_mxe, ch_ontologizer_ri, ch_ontologizer_se, ch_ontologizer_combined_as) :  Channel.empty()
 
 /*
  * Perform Gene Ontology analysis with Ontologizer
