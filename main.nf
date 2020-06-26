@@ -101,8 +101,8 @@ if (params.tissues_csv.endsWith(".csv")) {
     tag "${tissue_index}-${tissue_name}"
     publishDir "results/differential/per_tissue/${tissue_name}/"
     publishDir "results/differential/all_tissues/"
-    publishDir "results/differential/notebooks_rdata/" , pattern: '*.Rdata', saveAs: { filename -> "${tissue_name}_${analysis}_$filename" }
-    publishDir "results/differential/output_notebooks/", pattern: "*_${analysis}.ipynb"
+    publishDir "results/differential/notebooks_rdata/" , pattern: '*.Rdata', saveAs: { filename -> "${tissue_name}_${params.analysis}_$filename" }
+    publishDir "results/differential/output_notebooks/", pattern: "*_${params.analysis}.ipynb"
 
     input:
     set val(tissue_index), val(tissue_name) from ch_tissues_indices
@@ -121,7 +121,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     file "pdf/"
     file "metadata/"
     file "assets/"
-    file "jupyter/${tissue_name}_${analysis}.ipynb"
+    file "jupyter/${tissue_name}_${params.analysis}.ipynb"
     file("jupyter/notebook.RData") optional true
 
     script:
@@ -138,7 +138,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     cp $notebook jupyter/main.ipynb
     cd jupyter
 
-    papermill main.ipynb ${tissue_name}_${analysis}.ipynb -p tissue_index $tissue_index
+    papermill main.ipynb ${tissue_name}_${params.analysis}.ipynb -p tissue_index $tissue_index
     """
 }
 
