@@ -43,6 +43,16 @@ def helpMessage() {
                                 eg. flat file structure, and not nested in another folder.
       -profile                  Configuration profile to use. Can use multiple (comma separated)
                                 Available: testdata, docker, ...
+
+      -analysis                 A String from a defined set of options, must be included in the limma::topTable() table .csv filename
+                                Available options: { 'diff_splicing', 'bayesian-modeling', .. }
+                                Default: 'diff_analysis'
+
+      -model                    A String from a defined set of options, must be included in the limma::topTable() table .csv filename
+                                Available options: { AS_model_A_ijc_sex, AS_model_A_ijc_wo_DGE_sex, AS_model_A_sjc_sex, 
+                                                     AS_model_A_sjc_wo_DGE_sex, AS_model_B_sex_as_events, AS_model_B_sex }
+                                Default: 'AS_model_B_sex_as_events'
+
     Optional:
       --output                  Path to output directory.
                                 Default: 'results'
