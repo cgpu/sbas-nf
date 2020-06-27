@@ -136,12 +136,12 @@ if (params.tissues_csv.endsWith(".csv")) {
     set val(tissue_name), val('ri'),   file("data/ri*${params.model}_gene_set.txt"),   file("data/ri*${params.model}_universe.txt")   optional true into ch_ontologizer_ri
     set val(tissue_name), val('se'),   file("data/se*${params.model}_gene_set.txt"),   file("data/se*${params.model}_universe.txt")   optional true into ch_ontologizer_se
     set val(tissue_name), val('all_as_types'), file("data/*${params.model}*_universe.txt"), file("data/*${params.model}*_gene_set.txt") optional true into ch_all_as_types_ontol_inputs
-    file("data/*csv")
-    file("pdf/*")
-    file("metadata/*rds")
-    file("assets/*tsv")
-    file("jupyter/*.ipynb")
-    file("*.ipynb")
+    file("data/*csv") optional true
+    file("pdf/*") optional true
+    file("metadata/*rds") optional true
+    file("assets/*tsv") optional true
+    file("jupyter/*.ipynb") optional true
+    file("*.ipynb") optional true
     file("jupyter/*.RData") optional true
     file("*.RData") optional true
   
