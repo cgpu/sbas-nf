@@ -118,8 +118,9 @@ if (params.tissues_csv.endsWith(".csv")) {
     machineType 'n1-standard-16'
     tag "${tissue_index}-${tissue_name}"
     publishDir "results/${params.analysis}/per_tissue/${tissue_name}/"
-    publishDir "results/${params.analysis}/notebooks_rdata/" , pattern: '**/*.Rdata'
-    publishDir "results/${params.analysis}/output_notebooks/", pattern: "**/*_${params.analysis}.ipynb"
+    publishDir "results/${params.analysis}/notebooks_rdata/" , pattern: '*.Rdata'
+    // publishDir "results/${params.analysis}/output_notebooks/", pattern: "*.ipynb"
+    publishDir "results/", saveAs: { it == "*.ipynb" ? "output_notebooks/$it" : false }
     echo true
 
     input:
@@ -135,13 +136,12 @@ if (params.tissues_csv.endsWith(".csv")) {
     set val(tissue_name), val('ri'),   file("data/ri*${params.model}_gene_set.txt"),   file("data/ri*${params.model}_universe.txt")   optional true into ch_ontologizer_ri
     set val(tissue_name), val('se'),   file("data/se*${params.model}_gene_set.txt"),   file("data/se*${params.model}_universe.txt")   optional true into ch_ontologizer_se
     set val(tissue_name), val('all_as_types'), file("data/*${params.model}*_universe.txt"), file("data/*${params.model}*_gene_set.txt") optional true into ch_all_as_types_ontol_inputs
-    // file("data/*csv")
-    // file("pdf/")
-    // file("metadata/")
-    // file("assets/")
-    // file("jupyter/*.ipynb") optional true
-    // file("jupyter/*.RData") optional true
-    file("*")
+    file("data/*csv")
+    file("pdf/")
+    file("metadata/")
+    file("assets/")
+    file("jupyter/*.ipynb") optional true
+    file("jupyter/*.RData") optional true
 
     script:
     """
@@ -158,8 +158,10 @@ if (params.tissues_csv.endsWith(".csv")) {
     cd jupyter
 
     papermill main.ipynb ${tissue_name}_${params.analysis}.ipynb -p tissue_index $tissue_index
+    rm main.ipynb
 
-    ls -l ../*
+    cd -
+    tree
     """
 }
 
