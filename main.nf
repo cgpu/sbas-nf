@@ -162,6 +162,7 @@ if (params.tissues_csv.endsWith(".csv")) {
 
     papermill main.ipynb ${tissue_name}_${params.analysis}.ipynb -p tissue_index $tissue_index
     rm main.ipynb
+    mv notebook.RData ${tissue_name}_${params.analysis}.RData
 
     cd -
     tree
