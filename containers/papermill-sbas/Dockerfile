@@ -20,9 +20,9 @@ COPY environment.yml /
 COPY install.R /
 
 RUN conda install r-base r-devtools r-biocmanager -y && \
-    conda env update --name base --file /environment.yml &&  \
-    Rscript /install.R && \
-    conda clean -a
+    conda env update --name base --file /environment.yml && \
+    conda clean -a && \
+    Rscript /install.R
 
 ENV PATH /opt/conda/envs/base/bin:$PATH
 ENV PATH /opt/conda/envs/:$PATH
