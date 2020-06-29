@@ -115,7 +115,7 @@ if (params.tissues_csv.endsWith(".csv")) {
  */
 
  process runNotebook {
-    machineType 'n1-standard-16'
+    machineType 'n1-standard-4'
     tag "${tissue_index}-${tissue_name}"
     publishDir "results/${params.analysis}/per_tissue/${tissue_name}/"
     publishDir "results/${params.analysis}/notebooks_rdata/" , pattern: "*.Rdata"
