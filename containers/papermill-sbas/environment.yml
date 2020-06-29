@@ -41,3 +41,5 @@ dependencies:
   - r-rstan
   - r-rjags
   - r-compute.es
+  - bioconductor-rtracklayer
+  - bioconductor-biostrings
