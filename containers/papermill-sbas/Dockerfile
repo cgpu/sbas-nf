@@ -6,6 +6,7 @@ LABEL authors="Christina Chatzipantsiou <chatzipantsiou@gmail.com>" \
 RUN apt-get update -y && \
     apt-get install --no-install-recommends -y \
     nano \
+    tree \
     procps \
     zlib1g-dev \
     libzmq3-dev \
@@ -19,8 +20,7 @@ RUN apt-get update -y && \
 COPY environment.yml /
 COPY install.R /
 
-RUN conda install r-base r-devtools r-biocmanager -y && \
-    conda env update --name base --file /environment.yml && \
+RUN conda env update --name base --file /environment.yml && \
     conda clean -a && \
     Rscript /install.R
 
