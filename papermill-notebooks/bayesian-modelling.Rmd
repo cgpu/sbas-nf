@@ -29,8 +29,8 @@ The present analysis requires the following files to be present in the folder **
 
 using splice_type -- look for any of the chosen files
 
-- [x] `fromGTF.{splice_type}.txt`
 - [x] `GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct`
+- [x] `fromGTF.{splice_type}.txt`
 - [x] `rmats_final.{splice_type}.jc.ijc.txt`
 - [x] `rmats_final.{splice_type}.jc.sjc.txt`
 - [x] `*_model_B_sex_as_events*`
