@@ -12,7 +12,7 @@ jupyter:
     name: ir
 ---
 
-# Analysis Notebook - Hierarchical Bayesian Modelling sex-as events
+# Analysis Notebook - Hierarchical Bayesian Modelling
 
 
 ## **NOTE**:
@@ -31,6 +31,7 @@ The present analysis requires the following files to be present in the folder **
 - [x] `GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct`
 - [x] `rmats_final.{splice_type}.jc.ijc.txt`
 - [x] `rmats_final.{splice_type}.jc.sjc.txt`
+- [x] `limma::topTable()` dataframes written as csv, filenames shsould follow the convention: `se_{tissue_name}_AS_model_B_sex_as_events.csv`
 - [x] `srr_pdata.csv`: the corrected GTEx data as created by the forked yarn and in the `annes-changes` branch https://github.com/TheJacksonLaboratory/yarn/tree/annes-changes with the SRR data as used in the `rMATS 3.2.5` experiment.
 
 ### **`sbas/assets`**
