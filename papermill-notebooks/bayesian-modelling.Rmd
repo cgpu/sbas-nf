@@ -134,14 +134,9 @@ message("splice types are : ")
 as_site_types
 ```
 
-## Two parameters set and unset for debugging, set externally for nextflow execution of notebook, splice_index and tissue_index
-
-
 ```{r}
-tissue_index = 17
-splice_index = 5
-tissue      <- tissue.list[tissue_index]  #can be replaced with a loop or argument to choose a different tissue
-as_site_type <- as_site_types[splice_index] #can be replaced with a loop or argument to choose a different as_site_type
+tissue      <- tissue.list[tissue_index]    #can be replaced with a loop or argument to choose a different tissue
+as_site_type #can be replaced with a loop or argument to choose a different as_site_type
 ```
 
 ```{r}
