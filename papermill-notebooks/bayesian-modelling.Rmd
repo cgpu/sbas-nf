@@ -146,8 +146,10 @@ se_skin_not_sun_exposed_suprapubic_AS_model_B_sex_as_events.csv
 ```
 
 ```{r}
+tissue
 dataDir <- "../data/"
 assetsDir <- "../assets/"
+as_site_type
 suffix_pattern <- "AS_model_B_sex_as_events_refined.csv"
 
 file.with.de.results <- paste0(dataDir, as_site_type, "_", tissue, "_" , suffix_pattern  )
@@ -155,6 +157,9 @@ file.with.de.results
 file.exists(file.with.de.results)
 system( paste0("ls -l ", file.with.de.results), intern = TRUE )
 ```
+
+**NOTE**:
+The parameters `tissue_index` and `as_site_type` will be passed from papermill and added in the fist chunk of the notebook upon execution. Do not assign to a hardcoded value anywhere in the notebook, as they will ovewrite the assignment in the first chunk.
 
 ```{r}
 events.table         <- read.table(file.with.de.results, sep = ",")
