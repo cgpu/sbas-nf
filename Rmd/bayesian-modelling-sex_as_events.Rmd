@@ -1,0 +1,879 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.4.1
+  kernelspec:
+    display_name: R
+    language: R
+    name: ir
+---
+
+# Analysis Notebook - Hierarchical Bayesian Modelling sex-as events
+
+
+## **NOTE**:
+
+We assume that you have cloned the analysis repository and have `cd` into the parent directory. Before starting with the analysis make sure you have first completed the dependencies set up by following the instructions described in the **`dependencies/README.md`** document. All paths defined in this Notebook are relative to the parent directory (repository). Please close this Notebook and start again by following the above guidelines if you have not completed the aforementioned steps.
+
+<!-- #region -->
+## Prerequisite input files
+
+Before starting the execution of the following code, make sure you have available in the folders `sbas/data` and `sbas/assets` the files listed below as prerequisites.
+
+###  **`sbas/data`**.
+The present analysis requires the following files to be present in the folder **`sbas/data`** uncompressed as the filenames indicate below:
+
+using splice_type -- look for any of the chosen files
+
+- [x] `fromGTF.{splice_type}.txt`
+- [x] `GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct`
+- [x] `rmats_final.{splice_type}.jc.ijc.txt`
+- [x] `rmats_final.{splice_type}.jc.sjc.txt`
+- [x] `*_model_B_sex_as_events*`
+
+
+### **`sbas/assets`**
+The present analysis requires the following files to be present in the folder **`sbas/assets`**.
+
+- [x] `tissues.tsv`: metadata file with information on which tissues will be used for analysis -- only using the `include` option for analysis
+- [x] `splice-relevant-genes.txt`: list of RNA binding proteins that are annotated to splicing relevant functions from GO.
+
+
+**NOTE**: For convenience there are two `.tar.gz` archives with the contents described above.
+
+```
+gs://robinson-bucket/notebooks/bayesian-modeling/data_bayesian_se_AS_model_B_sex_as_events.tar.gz
+gs://robinson-bucket/notebooks/bayesian-modeling/assets_bayesian_se_AS_model_B_sex_as_events.tar.gz
+```
+
+Before running the notebook, one can unpack the contents of the archives in the `sbas-nf/data` folder as required by executing the following commands:
+
+```bash
+# git clone https://github.com/TheJacksonLaboratory/sbas-nf
+tar xvzf data_bayesian_se_AS_model_B_sex_as_events.tar.gz -C data/
+tar xvzf assets_bayesian_se_AS_model_B_sex_as_events.tar.gz -C assets/
+
+```
+
+<!-- #endregion -->
+
+<!-- #region -->
+## Loading dependencies
+
+If `conda` is available on your environment you can install the required dependencies by running the following commands:
+
+
+```bash
+time conda install -y r-base==3.6.2 &&
+conda install -y r-ggplot2 r-ggsci r-coda r-rstan r-rjags r-compute.es r-snakecase &&
+Rscript -e 'install.packages("runjags", repos = "https://cloud.r-project.org/")'
+```
+
+
+<!-- #endregion -->
+
+```{r}
+# Start the clock!
+start_time <- Sys.time()
+```
+
+```{r}
+# dataviz dependencies
+library(ggplot2)
+library(ggsci)
+library(grid)
+library(gridExtra)
+library(stringr)
+library(snakecase)
+
+# BDA2E-utilities dependencies
+library(rstan)
+library(parallel)
+library(rjags)
+library(runjags)
+library(compute.es)
+```
+
+<!-- #region -->
+Previously used list of tissues to use for the Hierarchical Bayesian modelling:
+
+
+
+```R
+tissue.list<-c("Heart - Left Ventricle",
+               "Breast - Mammary Tissue",
+               "Brain - Cortex.Brain - Frontal Cortex (BA9).Brain - Anterior cingulate cortex (BA24)",
+               "Adrenal Gland",
+               "Adipose - Subcutaneous",
+               "Muscle - Skeletal",
+               "Thyroid",
+               "Cells - Transformed fibroblasts",
+               "Artery - Aorta",
+               "Skin - Sun Exposed (Lower leg).Skin - Not Sun Exposed (Suprapubic)")
+```
+<!-- #endregion -->
+
+```{r}
+tissues_df <- readr::read_delim("../assets/tissues.tsv", delim = "\t")
+```
+
+```{r}
+tissue.list <- tissues_df$name[ tissues_df$include ==1]
+```
+
+```{r}
+message(length(tissue.list), " tissues")
+cat(tissue.list, sep = "\n")
+```
+
+```{r}
+splice_types <- c("a3ss", "a5ss", "mxe", "ri", "se")
+message("splice types are : ")
+splice_types
+```
+
+## Two parameters set and unset for debugging, set externally for nextflow execution of notebook, splice_index and tissue_index
+
+
+```{r}
+tissue_index = 17
+splice_index = 5
+tissue      <- tissue.list[tissue_index]  #can be replaced with a loop or argument to choose a different tissue
+splice_type <- splice_types[splice_index] #can be replaced with a loop or argument to choose a different splice_type
+```
+
+```{r}
+tissue
+splice_type
+```
+
+## Pattern for choosing `topTable()` files from `limma`
+
+```bash
+# {as_site_type} + '_' + {tissue} + '_' + suffix_pattern 
+se_skin_not_sun_exposed_suprapubic_AS_model_B_sex_as_events.csv
+```
+
+```{r}
+dataDir <- "../data/"
+assetsDir <- "../assets/"
+as_site_type <- splice_type
+suffix_pattern <- "AS_model_B_sex_as_events_refined.csv"
+
+file.with.de.results <- paste0(dataDir, as_site_type, "_", tissue, "_" , suffix_pattern  )
+file.with.de.results
+file.exists(file.with.de.results)
+system( paste0("ls -l ", file.with.de.results), intern = TRUE )
+```
+
+```{r}
+events.table         <- read.table(file.with.de.results, sep = ",")
+head(events.table, 2)
+```
+
+## Add annotation columns to the topTable dataframe:
+
+The feature information is encoded in the topTable dataframe as rownames. The `ID` and `geneSymbol` variables have been combined in the following pattern:
+
+```console
+{geneSymbol}-{ID} 
+```
+
+- `ID`: everything **_after_** last occurence of hyphen `-`
+example: 
+```R
+stringr::str_replace("apples - oranges - bananas", "^.+-", "")
+```
+
+```console
+# output:
+
+' bananas'
+```
+
+- `geneSymbol`: everything **_before_** last occurence of `-`
+example: 
+
+```R
+sub('-[^-]*$', '',"apples - oranges - bananas")
+```
+
+```console
+# output:
+
+'apples - oranges '
+```
+
+```diff
+- NOTE: The above solution covers the cases where a hyphen is part of the geneSymbol.
+```
+
+```{r}
+cols_initially <- colnames(events.table)
+cols_initially
+```
+
+```{r}
+events.table[["ID"]] <- stringr::str_replace(rownames(events.table),  "^.+-", "")
+events.table[["gene_name"]] <- sub('-[^-]*$', '', rownames(events.table))
+```
+
+```{r}
+keepInOrderCols <- c("gene_name", "ID", cols_initially)
+```
+
+```{r}
+events.table <- events.table[ , keepInOrderCols ]
+```
+
+```{r}
+tail(events.table, 2)
+```
+
+## Define filepaths of required inputs
+
+`file.with.de.results` has been defined above
+
+```{r}
+rbp.table.name        <- paste0(assetsDir, "splice-relevant-genes.txt")
+file.exists(rbp.table.name)
+```
+
+```{r}
+events.table.name     <- paste0(paste0(paste0(dataDir, "fromGTF."), snakecase::to_upper_lower_case(splice_type)),".txt")
+events.table.name
+file.exists(events.table.name)
+```
+
+```{r}
+jc.ijc.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), splice_type),".jc.ijc.txt.gz")
+jc.ijc.counts.file.name
+file.exists(jc.ijc.counts.file.name)
+```
+
+```{r}
+jc.sjc.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), splice_type),".jc.sjc.txt.gz")
+jc.sjc.counts.file.name
+file.exists(jc.sjc.counts.file.name)
+```
+
+```{r}
+metadata.file.name    <- paste0(dataDir, "srr_pdata.csv")
+file.exists(metadata.file.name)
+```
+
+```{r}
+expression.file.name  <- paste0(dataDir, "GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct")
+file.exists(expression.file.name)
+```
+
+## Use the define filepaths to load/read in the tables 
+
+
+Load the sjc and sjc count matrices, and the list of RNA binding proteins that are annotated to either:
+- mRNA splicing, via spliceosome `(GO:0000398)`,
+- regulation of mRNA splicing, via spliceosome `(GO:0048024)`, or 
+- both. 
+
+The table has the:
+- Gene Symbol
+- the Uniprot ID (`uprot.id`)
+- the NCBI Gene ID (`gene.id`) and 
+- boolean columns for being 
+  - `S`=mRNA splicing, via spliceosome `(GO:0000398)` and 
+  - `R`=regulation of mRNA splicing, via spliceosome `(GO:0048024)`.
+
+
+### Filtering of the `topTable()` object
+
+- `abs(events.table$logFC)>=log2(1.5)`
+- `events.table$adj.P.Val<=0.05`
+
+```{r}
+dim(events.table)
+events.table <- events.table[abs(events.table$logFC)>=log2(1.5) & events.table$adj.P.Val<=0.05,]
+dim(events.table)
+head(events.table,2)
+```
+
+Make sure this command has been executed before `gunzip sbas/data/fromGTF.*` as the files are expected uncompressed.
+
+
+```{r}
+annot.table  <- read.table(events.table.name,header=T)
+dim(annot.table)
+head(annot.table, 1)
+```
+
+```{r}
+merged.table <- merge(events.table, annot.table, by="ID")
+```
+
+```{r}
+dim(merged.table)
+head(merged.table, 2)
+```
+
+```{r}
+rbp.table    <- read.table(rbp.table.name,sep="\t",header=TRUE)
+dim(rbp.table)
+head(rbp.table, 1)
+```
+
+Make sure this command has been executed before `gunzip sbas/data/rmats_final.{splice_type}.jc.*jc.*` as the files are expected uncompressed.
+
+
+```{r}
+jc.ijc.counts   <- as.data.frame(data.table::fread(jc.ijc.counts.file.name))
+dim(jc.ijc.counts)
+jc.ijc.counts[1:2,1:3]
+```
+
+```{r}
+jc.sjc.counts  <- as.data.frame(data.table::fread(jc.sjc.counts.file.name))
+dim(jc.sjc.counts)
+jc.sjc.counts[1:2,1:3]
+```
+
+## Check `dim()` of loaded objects
+
+```{r}
+dim(events.table)
+dim(annot.table)
+dim(merged.table)
+dim(rbp.table)
+dim(jc.ijc.counts)
+dim(jc.sjc.counts)
+```
+
+## Read sample info
+
+```{r}
+metadata.file.name
+file.exists(metadata.file.name)
+system(paste0("ls -l", " ../data/srr_pdata.csv"), intern = TRUE)
+```
+
+```{r}
+meta.data <- readr::read_csv(metadata.file.name)
+dim(meta.data)
+head(meta.data, 1)
+```
+
+```{r}
+meta.data$SMTSD[1:3]
+```
+
+```{r}
+meta.data[["SMTSD"]] <- as.character(meta.data[["SMTSD"]])
+```
+
+```{r}
+meta.data$SMTSD[1:3]
+```
+
+```{r}
+meta.data <- meta.data[ snakecase::to_snake_case(meta.data$SMTSD) == tissue,]
+```
+
+```{r}
+tissue
+dim(meta.data)
+meta.data[1:2,1:8]
+```
+
+```{r}
+# Undo snakecase of SMTSD
+tissue
+tissue <- unique(meta.data$SMTSD)
+tissue
+```
+
+```{r}
+dim(jc.ijc.counts)
+jc.ijc.counts   <- jc.ijc.counts[,colnames(jc.ijc.counts) %in% meta.data$SRR]
+dim(jc.ijc.counts)
+```
+
+```{r}
+dim(jc.sjc.counts)
+jc.sjc.counts  <- jc.sjc.counts[,colnames(jc.sjc.counts) %in% meta.data$SRR]
+dim(jc.sjc.counts)
+```
+
+## This notebook only signficant events are used - filtering now on Adj.P Val
+
+If there are more than 100 events that are significant, reduce this by ordering on the adjusted p-value (column Adj.P.Val).  
+
+Then update the ijc and sjc matrices and the merged.table (annotations)
+
+
+```{r}
+if (nrow(jc.sjc.counts) > 100 ) {
+    head(merged.table,2)
+    dim(merged.table)
+    order_by_adj.P.Val <- order(merged.table$adj.P.Val,decreasing=TRUE)
+    head(merged.table[order_by_adj.P.Val,],2)
+    keep_IDs <- merged.table[order_by_adj.P.Val,]$ID[1:100]
+    head(keep_IDs)
+    keep_IDs <- keep_IDs[order(keep_IDs, decreasing=FALSE)]
+    head(keep_IDs)
+    # counts table will be identical in rows
+    counts.keep <- as.character(rownames(jc.sjc.counts)) %in% as.character(keep_IDs)
+    table(counts.keep)
+    # not so sure about merged.table - so lets have a different logical key
+    merged.keep <- as.character(merged.table$ID) %in% as.character(keep_IDs)
+    table(merged.keep)
+    
+    # update the sjc counts 
+    dim(jc.sjc.counts)
+    jc.sjc.counts  <- jc.sjc.counts[counts.keep,]
+    dim(jc.sjc.counts)
+ 
+    # update the ijc counts
+    dim(jc.ijc.counts)
+    jc.ijc.counts   <- jc.ijc.counts[counts.keep,]
+    dim(jc.ijc.counts)
+    
+    # merged table
+    dim(merged.table)
+    merged.table       <- merged.table[merged.keep,] 
+    dim(merged.table)
+}
+```
+
+```{r}
+dim(jc.ijc.counts)
+dim(jc.sjc.counts)
+dim(merged.table)
+```
+
+## Read expression data:
+
+```{r}
+expression.file.name
+file.exists(expression.file.name)
+```
+
+```{r}
+expression.mat <- read.table(expression.file.name, 
+                             nrows = 1,
+                             sep = "\t",
+                             header = T,
+                             skip = 2)
+```
+
+```{r}
+dim(expression.mat)
+expression.mat[1:2,1:4]
+```
+
+```{r}
+colnames(expression.mat)[1:3]
+```
+
+```{r}
+colnames.expression.mat <- colnames(expression.mat)
+```
+
+```{r}
+length(colnames.expression.mat)
+colnames.expression.mat[1:4]
+```
+
+```{r}
+length(colnames.expression.mat)
+```
+
+```{r}
+total.samples           <- length(colnames.expression.mat)
+total.samples
+```
+
+```{r}
+meta.data$SAMPID[1]
+gsub("-","\\.",meta.data$SAMPID[1])
+```
+
+```{r}
+meta.data$SAMPID   <- gsub("-","\\.",meta.data$SAMPID)
+```
+
+```{r}
+dim(meta.data)
+meta.data               <- meta.data[meta.data$SAMPID %in% colnames(expression.mat),]
+dim(meta.data)
+```
+
+```{r}
+expression.mat[1:2,1:4]
+```
+
+```{r}
+meta.data <- meta.data[!duplicated(meta.data$SAMPID),]
+```
+
+```{r}
+dim(meta.data)
+```
+
+```{r}
+jc.ijc.counts <- jc.ijc.counts[,colnames(jc.ijc.counts) %in% meta.data$SRR]
+dim(jc.ijc.counts)
+jc.ijc.counts[1:2,1:4]
+```
+
+```{r}
+jc.sjc.counts <- jc.sjc.counts[,colnames(jc.sjc.counts) %in% meta.data$SRR]
+dim(jc.sjc.counts)
+jc.sjc.counts[1:2,1:4]
+```
+
+```{r}
+meta.data <- meta.data[meta.data$SRR %in% colnames(jc.ijc.counts),]
+dim(meta.data)
+meta.data[1:2,1:8]
+```
+
+```{r}
+colnames.expression.mat[1:4]
+```
+
+```{r}
+dim(expression.mat)
+expression.mat[1:2,1:4]
+```
+
+```{r}
+tissue <- unique(meta.data$SMTSD [ meta.data$SMTSD == tissue])
+tissue
+```
+
+```{r}
+col.in.tissue<-c()
+for (col in colnames.expression.mat)
+  
+  col.in.tissue<-c(col.in.tissue, (col %in% meta.data$SAMPID) && (meta.data$SMTSD[which(meta.data$SAMPID==col)] %in% tissue) && (meta.data$SUBJID[which(meta.data$SAMPID==col)]!='GTEX-11ILO'))
+```
+
+```{r}
+length(col.in.tissue)
+table(col.in.tissue)
+```
+
+```{r}
+length(colnames.expression.mat)
+length(col.in.tissue)
+
+col.in.tissue[1:3]
+```
+
+```{r}
+# colClasses is used to skip columns
+expression.mat <-read.table(expression.file.name, 
+                            sep= "\t",
+                            header = T,
+                            skip = 2, 
+                            colClasses = ifelse(col.in.tissue, "numeric", "NULL"))
+```
+
+```{r}
+length(col.in.tissue)
+```
+
+## Read gene names:
+
+```{r}
+dim(expression.mat)
+expression.mat <- expression.mat[,order(match(colnames(expression.mat),meta.data$SAMPID))]
+dim(expression.mat)
+```
+
+```{r}
+jc.ijc.counts     <- jc.ijc.counts[,order(match(colnames(jc.ijc.counts),meta.data$SRR))]
+dim(jc.ijc.counts)
+```
+
+```{r}
+jc.sjc.counts    <- jc.sjc.counts[,order(match(colnames(jc.sjc.counts),meta.data$SRR))]
+dim(jc.sjc.counts)
+```
+
+```{r}
+all.genes      <- read.table(expression.file.name,sep="\t",header=T,skip=2,colClasses = c(rep("character", 2), rep("NULL", total.samples-2)))
+dim(all.genes)
+head(all.genes, 2)
+```
+
+```{r}
+expression.mat <- expression.mat[!duplicated(all.genes$Description),]
+dim(expression.mat)
+expression.mat[1:2,1:4]
+```
+
+```{r}
+all.genes      <- all.genes[!duplicated(all.genes$Description),]
+dim(all.genes)
+```
+
+```{r}
+jc.sjc.counts    <- jc.sjc.counts[merged.table$geneSymbol %in% all.genes$Description,]
+dim(jc.sjc.counts)
+```
+
+```{r}
+jc.ijc.counts     <- jc.ijc.counts[merged.table$geneSymbol %in% all.genes$Description,]
+dim(jc.ijc.counts)
+```
+
+```{r}
+merged.table   <- merged.table[merged.table$geneSymbol %in% all.genes$Description,]
+dim(merged.table)
+```
+
+```{r}
+gene.names     <- unique(merged.table$geneSymbol)
+length(gene.names)
+```
+
+```{r}
+expression.mat <- expression.mat[all.genes$Description %in% c(as.character(rbp.table$Gene),as.character(gene.names)),]
+dim(expression.mat)
+```
+
+```{r}
+rownames.expression.mat <-all.genes$Description[all.genes$Description %in% c(as.character(rbp.table$Gene),as.character(gene.names))]
+length(rownames.expression.mat)
+```
+
+```{r}
+expression.mat <-expression.mat[!duplicated(rownames.expression.mat),]
+dim(expression.mat)
+```
+
+```{r}
+rownames.expression.mat <-rownames.expression.mat[!duplicated(rownames.expression.mat)]
+length(rownames.expression.mat)
+```
+
+## Prepare expression of genes and RBPS:
+
+```{r}
+num.events     <- nrow(merged.table)
+num.events
+```
+
+```{r}
+event.to.gene  <- c()
+```
+
+```{r}
+gexp           <- expression.mat[rownames.expression.mat %in% gene.names,]
+dim(gexp)
+```
+
+```{r}
+rownames(gexp) <- rownames.expression.mat[rownames.expression.mat %in% gene.names]
+```
+
+```{r}
+gexp           <- gexp[order(match(rownames(gexp),gene.names)),]
+dim(gexp)
+gexp[1:2,1:4]
+```
+
+```{r}
+gexp           <- log2(gexp+0.5)
+```
+
+```{r}
+gexp           <- gexp-rowMeans(gexp)
+```
+
+```{r}
+gexp[apply(gexp,1,sd)>0,] <- gexp[apply(gexp,1,sd)>0,]/apply(gexp[apply(gexp,1,sd)>0,],1,sd)
+```
+
+```{r}
+rexp           <- expression.mat[rownames.expression.mat %in% rbp.table$Gene,]
+```
+
+```{r}
+rownames(rexp) <- rownames.expression.mat[rownames.expression.mat %in% rbp.table$Gene]
+```
+
+```{r}
+rexp           <- rexp[order(match(rownames(rexp),rbp.table$Gene)),]
+```
+
+```{r}
+rexp           <- log2(rexp+0.5)
+```
+
+```{r}
+rexp           <- rexp-rowMeans(rexp)
+```
+
+```{r}
+rexp           <- rexp/apply(rexp,1,function(v){ifelse(sum(v==v[1])<length(v),sd(v),1)})
+```
+
+```{r}
+for (i in (1:num.events))
+  event.to.gene<-c(event.to.gene,which(unique(merged.table$geneSymbol)==merged.table[i,"geneSymbol"]))
+    sex<-ifelse(meta.data$SEX==1,1,0)
+```
+
+```{r}
+sex[1:4]
+table(sex)
+```
+
+```{r}
+end_time <- Sys.time()
+end_time - start_time
+```
+
+## Run stan:
+
+```{r}
+dataList = list(
+  as = round(jc.sjc.counts) ,   #sjc event counts across experiments
+  c = round(jc.sjc.counts+jc.ijc.counts)    , #total counts for event, i.e. sjc & ijc, across experiments
+  gexp = gexp, #read counts for genes (from gtex, take the raw counts) across experiments
+  rexp = rexp, #read counts for RBPs (from gtex, take the raw counts)
+  event_to_gene = event.to.gene,  #the gene index for each event (1 to the number of distinct genes) 
+  Nrbp = nrow(rexp), #number of RBPs
+  Nevents = nrow(merged.table),  #most varying AS events in 
+  Nexp = ncol(expression.mat),#number of experiments such that we measured each event, gene and RBP in each experiment
+  Ngenes = nrow(gexp),
+  sex=sex
+)
+
+
+modelString = "
+data {
+int<lower=0> Nevents;
+int<lower=0> Nexp;
+int<lower=0> Nrbp;
+int<lower=0> Ngenes;
+int<lower=0> as[Nevents,Nexp] ;
+int<lower=0> c[Nevents,Nexp] ;
+matrix[Ngenes,Nexp] gexp ; 
+matrix[Nrbp,Nexp] rexp ; 
+int<lower=0> event_to_gene[Nevents];
+int<lower=0,upper=1> sex[Nexp];
+
+}
+
+
+parameters {
+real beta0[Nevents] ;
+real beta1[Nevents] ;
+matrix[Nevents,Nrbp] beta2 ;
+real beta3[Nevents];
+real beta4[Nrbp];
+
+}
+model {
+
+for ( i in 1:Nexp ) {  
+
+
+    for ( j in 1:Nevents ) if (c[j,i]>0) { 
+
+      as[j,i] ~ binomial(c[j,i], inv_logit(beta0[j]+beta1[j]*sex[i]+dot_product(beta2[j,],rexp[,i])+beta3[j]*gexp[event_to_gene[j],i] ) );
+
+  }
+}
+
+for (k in 1:Nrbp){
+
+  for ( j in 1:Nevents ) { 
+
+        beta2[j,k] ~normal(beta4[k],1);
+  }
+
+  beta4[k]~normal(0,1);
+
+}
+
+
+for ( j in 1:Nevents ) { 
+
+    beta1[j] ~ normal(0,1);
+    beta0[j] ~ normal(0,1);
+    beta3[j] ~ normal(0,1);
+  }
+
+}
+"
+
+# Start the clock!
+start_time <- Sys.time()
+
+stanDso <- rstan::stan_model( model_code=modelString ) 
+stanFit <- sampling( object=stanDso , 
+                    data = dataList , 
+                    chains = 3 , 
+                    iter = 8000, 
+                    warmup = 6000,
+                    thin = 1,
+                    init = 0, 
+                    cores = 3 )
+
+mcmcCoda = coda::mcmc.list( lapply( 1:ncol(stanFit) , function(x) { mcmc(as.array(stanFit)[,x,]) } ) )
+
+end_time <- Sys.time()
+end_time - start_time
+```
+
+## Save R objects
+
+```{r}
+save.image(file = "notebook.RData")
+file.exists("notebook.RData")
+system("pwd && ls -l notebook.RData", intern = TRUE)
+```
+
+## Metadata
+
+For replicability and reproducibility purposes, we also print the following metadata:
+
+1. Checksums of **"artefacts"**, files generated during the analysis and stored in the folder directory **`data`**
+2. List of environment metadata, dependencies, versions of libraries using `utils::sessionInfo()` and [`devtools::session_info()`](https://devtools.r-lib.org/reference/session_info.html)
+
+
+### 1. Checksums with the sha256 algorithm
+
+```{r}
+figure_id       <- "bayesian-modeling"
+
+message("Generating sha256 checksums of the artefacts in the `..data/` directory .. ")
+system(paste0("cd ../data/ && find . -type f -exec sha256sum {} \\; > ../metadata/",  figure_id, "_sha256sums.txt"), intern = TRUE)
+message("Done!\n")
+
+data.table::fread(paste0("../metadata/", figure_id, "_sha256sums.txt"), header = FALSE, col.names = c("sha256sum", "file"))
+```
+
+### 2. Libraries metadata
+
+```{r}
+dev_session_info   <- devtools::session_info()
+utils_session_info <- utils::sessionInfo()
+
+message("Saving `devtools::session_info()` objects in ../metadata/devtools_session_info.rds  ..")
+saveRDS(dev_session_info, file = paste0("../metadata/", figure_id, "_devtools_session_info.rds"))
+message("Done!\n")
+
+message("Saving `utils::sessionInfo()` objects in ../metadata/utils_session_info.rds  ..")
+saveRDS(utils_session_info, file = paste0("../metadata/", figure_id ,"_utils_info.rds"))
+message("Done!\n")
+
+dev_session_info$platform
+dev_session_info$packages[dev_session_info$packages$attached==TRUE, ]
+```
