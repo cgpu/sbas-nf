@@ -250,15 +250,15 @@ file.exists(events.table.name)
 ```
 
 ```{r}
-jc.ijc.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), splice_type),".jc.ijc.txt.gz")
-jc.ijc.counts.file.name
-file.exists(jc.ijc.counts.file.name)
+inc.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), splice_type),".jc.ijc.txt.gz")
+inc.counts.file.name
+file.exists(inc.counts.file.name)
 ```
 
 ```{r}
-jc.sjc.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), splice_type),".jc.sjc.txt.gz")
-jc.sjc.counts.file.name
-file.exists(jc.sjc.counts.file.name)
+skip.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), splice_type),".jc.sjc.txt.gz")
+skip.counts.file.name
+file.exists(skip.counts.file.name)
 ```
 
 ```{r}
@@ -328,15 +328,15 @@ Make sure this command has been executed before `gunzip sbas/data/rmats_final.{s
 
 
 ```{r}
-jc.ijc.counts   <- as.data.frame(data.table::fread(jc.ijc.counts.file.name))
-dim(jc.ijc.counts)
-jc.ijc.counts[1:2,1:3]
+inc.counts   <- as.data.frame(data.table::fread(inc.counts.file.name))
+dim(inc.counts)
+inc.counts[1:2,1:3]
 ```
 
 ```{r}
-jc.sjc.counts  <- as.data.frame(data.table::fread(jc.sjc.counts.file.name))
-dim(jc.sjc.counts)
-jc.sjc.counts[1:2,1:3]
+skip.counts  <- as.data.frame(data.table::fread(skip.counts.file.name))
+dim(skip.counts)
+skip.counts[1:2,1:3]
 ```
 
 ## Check `dim()` of loaded objects
@@ -346,8 +346,8 @@ dim(events.table)
 dim(annot.table)
 dim(merged.table)
 dim(rbp.table)
-dim(jc.ijc.counts)
-dim(jc.sjc.counts)
+dim(inc.counts)
+dim(skip.counts)
 ```
 
 ## Read sample info
@@ -394,15 +394,15 @@ tissue
 ```
 
 ```{r}
-dim(jc.ijc.counts)
-jc.ijc.counts   <- jc.ijc.counts[,colnames(jc.ijc.counts) %in% meta.data$SRR]
-dim(jc.ijc.counts)
+dim(inc.counts)
+inc.counts   <- inc.counts[,colnames(inc.counts) %in% meta.data$SRR]
+dim(inc.counts)
 ```
 
 ```{r}
-dim(jc.sjc.counts)
-jc.sjc.counts  <- jc.sjc.counts[,colnames(jc.sjc.counts) %in% meta.data$SRR]
-dim(jc.sjc.counts)
+dim(skip.counts)
+skip.counts  <- skip.counts[,colnames(skip.counts) %in% meta.data$SRR]
+dim(skip.counts)
 ```
 
 ## This notebook only signficant events are used - filtering now on Adj.P Val
@@ -413,7 +413,7 @@ Then update the ijc and sjc matrices and the merged.table (annotations)
 
 
 ```{r}
-if (nrow(jc.sjc.counts) > 100 ) {
+if (nrow(skip.counts) > 100 ) {
     head(merged.table,2)
     dim(merged.table)
     order_by_adj.P.Val <- order(merged.table$adj.P.Val,decreasing=TRUE)
@@ -423,21 +423,21 @@ if (nrow(jc.sjc.counts) > 100 ) {
     keep_IDs <- keep_IDs[order(keep_IDs, decreasing=FALSE)]
     head(keep_IDs)
     # counts table will be identical in rows
-    counts.keep <- as.character(rownames(jc.sjc.counts)) %in% as.character(keep_IDs)
+    counts.keep <- as.character(rownames(skip.counts)) %in% as.character(keep_IDs)
     table(counts.keep)
     # not so sure about merged.table - so lets have a different logical key
     merged.keep <- as.character(merged.table$ID) %in% as.character(keep_IDs)
     table(merged.keep)
     
     # update the sjc counts 
-    dim(jc.sjc.counts)
-    jc.sjc.counts  <- jc.sjc.counts[counts.keep,]
-    dim(jc.sjc.counts)
+    dim(skip.counts)
+    skip.counts  <- skip.counts[counts.keep,]
+    dim(skip.counts)
  
     # update the ijc counts
-    dim(jc.ijc.counts)
-    jc.ijc.counts   <- jc.ijc.counts[counts.keep,]
-    dim(jc.ijc.counts)
+    dim(inc.counts)
+    inc.counts   <- inc.counts[counts.keep,]
+    dim(inc.counts)
     
     # merged table
     dim(merged.table)
@@ -447,8 +447,8 @@ if (nrow(jc.sjc.counts) > 100 ) {
 ```
 
 ```{r}
-dim(jc.ijc.counts)
-dim(jc.sjc.counts)
+dim(inc.counts)
+dim(skip.counts)
 dim(merged.table)
 ```
 
@@ -522,19 +522,19 @@ dim(meta.data)
 ```
 
 ```{r}
-jc.ijc.counts <- jc.ijc.counts[,colnames(jc.ijc.counts) %in% meta.data$SRR]
-dim(jc.ijc.counts)
-jc.ijc.counts[1:2,1:4]
+inc.counts <- inc.counts[,colnames(inc.counts) %in% meta.data$SRR]
+dim(inc.counts)
+inc.counts[1:2,1:4]
 ```
 
 ```{r}
-jc.sjc.counts <- jc.sjc.counts[,colnames(jc.sjc.counts) %in% meta.data$SRR]
-dim(jc.sjc.counts)
-jc.sjc.counts[1:2,1:4]
+skip.counts <- skip.counts[,colnames(skip.counts) %in% meta.data$SRR]
+dim(skip.counts)
+skip.counts[1:2,1:4]
 ```
 
 ```{r}
-meta.data <- meta.data[meta.data$SRR %in% colnames(jc.ijc.counts),]
+meta.data <- meta.data[meta.data$SRR %in% colnames(inc.counts),]
 dim(meta.data)
 meta.data[1:2,1:8]
 ```
@@ -594,13 +594,13 @@ dim(expression.mat)
 ```
 
 ```{r}
-jc.ijc.counts     <- jc.ijc.counts[,order(match(colnames(jc.ijc.counts),meta.data$SRR))]
-dim(jc.ijc.counts)
+inc.counts     <- inc.counts[,order(match(colnames(inc.counts),meta.data$SRR))]
+dim(inc.counts)
 ```
 
 ```{r}
-jc.sjc.counts    <- jc.sjc.counts[,order(match(colnames(jc.sjc.counts),meta.data$SRR))]
-dim(jc.sjc.counts)
+skip.counts    <- skip.counts[,order(match(colnames(skip.counts),meta.data$SRR))]
+dim(skip.counts)
 ```
 
 ```{r}
@@ -621,13 +621,13 @@ dim(all.genes)
 ```
 
 ```{r}
-jc.sjc.counts    <- jc.sjc.counts[merged.table$geneSymbol %in% all.genes$Description,]
-dim(jc.sjc.counts)
+skip.counts    <- skip.counts[merged.table$geneSymbol %in% all.genes$Description,]
+dim(skip.counts)
 ```
 
 ```{r}
-jc.ijc.counts     <- jc.ijc.counts[merged.table$geneSymbol %in% all.genes$Description,]
-dim(jc.ijc.counts)
+inc.counts     <- inc.counts[merged.table$geneSymbol %in% all.genes$Description,]
+dim(inc.counts)
 ```
 
 ```{r}
@@ -742,8 +742,8 @@ end_time - start_time
 
 ```{r}
 dataList = list(
-  as = round(jc.sjc.counts) ,   #sjc event counts across experiments
-  c = round(jc.sjc.counts+jc.ijc.counts)    , #total counts for event, i.e. sjc & ijc, across experiments
+  as = round(skip.counts) ,   #sjc event counts across experiments
+  c = round(skip.counts+inc.counts)    , #total counts for event, i.e. sjc & ijc, across experiments
   gexp = gexp, #read counts for genes (from gtex, take the raw counts) across experiments
   rexp = rexp, #read counts for RBPs (from gtex, take the raw counts)
   event_to_gene = event.to.gene,  #the gene index for each event (1 to the number of distinct genes) 
