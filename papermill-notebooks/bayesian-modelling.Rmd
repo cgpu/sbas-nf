@@ -12,7 +12,7 @@ jupyter:
     name: ir
 ---
 
-# Analysis Notebook - Hierarchical Bayesian Modelling
+# Analysis Notebook - Hierarchical Bayesian Modelling sex-as events
 
 
 ## **NOTE**:
@@ -29,10 +29,17 @@ The present analysis requires the following files to be present in the folder **
 
 - [x] `fromGTF.SE.txt`
 - [x] `GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct`
+- [x] `rmats_final.a3ss.jc.ijc.txt`
+- [x] `rmats_final.a3ss.jc.sjc.txt`
+- [x] `rmats_final.a5ss.jc.ijc.txt`
+- [x] `rmats_final.a5ss.jc.sjc.txt`
+- [x] `rmats_final.mxe.jc.ijc.txt`
+- [x] `rmats_final.mxe.jc.sjc.txt`
+- [x] `rmats_final.ri.jc.ijc.txt`
+- [x] `rmats_final.ri.jc.sjc.txt`
 - [x] `rmats_final.se.jc.ijc.txt`
 - [x] `rmats_final.se.jc.sjc.txt`
-- [x] `limma::topTable()` dataframes written as csv, filenames shsould follow the convention: `se_{tissue_name}_AS_model_B_sex_as_events.csv`
-- [x] `srr_pdata.csv`: the corrected GTEx data as created by the forked yarn and in the `annes-changes` branch https://github.com/TheJacksonLaboratory/yarn/tree/annes-changes with the SRR data as used in the `rMATS 3.2.5` experiment.
+- [x] `*_model_B_sex_as_events*`
 
 
 ### **`sbas/assets`**
@@ -49,10 +56,10 @@ gs://robinson-bucket/notebooks/bayesian-modeling/data_bayesian_se_AS_model_B_sex
 gs://robinson-bucket/notebooks/bayesian-modeling/assets_bayesian_se_AS_model_B_sex_as_events.tar.gz
 ```
 
-Before running the notebook, one can unpack the contents of the archives in the `sbas/data` folder as required by executing the following commands:
+Before running the notebook, one can unpack the contents of the archives in the `sbas-nf/data` folder as required by executing the following commands:
 
 ```bash
-# git clone https://github.com/TheJacksonLaboratory/sbas
+# git clone https://github.com/TheJacksonLaboratory/sbas-nf
 tar xvzf data_bayesian_se_AS_model_B_sex_as_events.tar.gz -C data/
 tar xvzf assets_bayesian_se_AS_model_B_sex_as_events.tar.gz -C assets/
 
@@ -130,6 +137,7 @@ cat(tissue.list, sep = "\n")
 ```
 
 ```{r}
+tissue_index = 17
 tissue <- tissue.list[tissue_index]  #can be replaced with a loop or argument to choose a different tissue
 ```
 
@@ -148,7 +156,7 @@ se_skin_not_sun_exposed_suprapubic_AS_model_B_sex_as_events.csv
 dataDir <- "../data/"
 assetsDir <- "../assets/"
 as_site_type <- "se"
-suffix_pattern <- "AS_model_B_sex_as_events.csv"
+suffix_pattern <- "AS_model_B_sex_as_events_refined.csv"
 
 file.with.de.results <- paste0(dataDir, as_site_type, "_", tissue, "_" , suffix_pattern  )
 file.with.de.results
@@ -235,13 +243,13 @@ file.exists(events.table.name)
 ```
 
 ```{r}
-inc.counts.file.name  <- paste0(dataDir, "rmats_final.se.jc.ijc.txt")
-file.exists(inc.counts.file.name)
+se.jc.ijc.counts.file.name  <- paste0(dataDir, "rmats_final.se.jc.ijc.txt.gz")
+file.exists(se.jc.ijc.counts.file.name)
 ```
 
 ```{r}
-skip.counts.file.name <- paste0(dataDir, "rmats_final.se.jc.sjc.txt")
-file.exists(skip.counts.file.name)
+se.jc.sjc.counts.file.name <- paste0(dataDir, "rmats_final.se.jc.sjc.txt.gz")
+file.exists(se.jc.sjc.counts.file.name)
 ```
 
 ```{r}
@@ -257,7 +265,7 @@ file.exists(expression.file.name)
 ## Use the define filepaths to load/read in the tables 
 
 
-Load the skip and inclusion count matrices, and the list of RNA binding proteins that are annotated to either:
+Load the sjc and sjc count matrices, and the list of RNA binding proteins that are annotated to either:
 - mRNA splicing, via spliceosome `(GO:0000398)`,
 - regulation of mRNA splicing, via spliceosome `(GO:0048024)`, or 
 - both. 
@@ -311,15 +319,15 @@ Make sure this command has been executed before `gunzip sbas/data/rmats_final.se
 
 
 ```{r}
-inc.counts   <- as.data.frame(data.table::fread(inc.counts.file.name))
-dim(inc.counts)
-inc.counts[1:2,1:3]
+se.jc.ijc.counts   <- as.data.frame(data.table::fread(se.jc.ijc.counts.file.name))
+dim(se.jc.ijc.counts)
+se.jc.ijc.counts[1:2,1:3]
 ```
 
 ```{r}
-skip.counts  <- as.data.frame(data.table::fread(skip.counts.file.name))
-dim(skip.counts)
-skip.counts[1:2,1:3]
+se.jc.sjc.counts  <- as.data.frame(data.table::fread(se.jc.sjc.counts.file.name))
+dim(se.jc.sjc.counts)
+se.jc.sjc.counts[1:2,1:3]
 ```
 
 ## Check `dim()` of loaded objects
@@ -329,8 +337,8 @@ dim(events.table)
 dim(annot.table)
 dim(merged.table)
 dim(rbp.table)
-dim(inc.counts)
-dim(skip.counts)
+dim(se.jc.ijc.counts)
+dim(se.jc.sjc.counts)
 ```
 
 ## Read sample info
@@ -377,51 +385,61 @@ tissue
 ```
 
 ```{r}
-dim(inc.counts)
-inc.counts   <- inc.counts[,colnames(inc.counts) %in% meta.data$SRR]
-dim(inc.counts)
+dim(se.jc.ijc.counts)
+se.jc.ijc.counts   <- se.jc.ijc.counts[,colnames(se.jc.ijc.counts) %in% meta.data$SRR]
+dim(se.jc.ijc.counts)
 ```
 
 ```{r}
-dim(skip.counts)
-skip.counts  <- skip.counts[,colnames(skip.counts) %in% meta.data$SRR]
-dim(skip.counts)
+dim(se.jc.sjc.counts)
+se.jc.sjc.counts  <- se.jc.sjc.counts[,colnames(se.jc.sjc.counts) %in% meta.data$SRR]
+dim(se.jc.sjc.counts)
 ```
 
-```{r}
-sd.threshold <- quantile(apply(inc.counts,1,sd)+apply(skip.counts,1,sd),0.95)
-sd.threshold
-```
+## This notebook only signficant events are used - filtering now on Adj.P Val
+
+If there are more than 100 events that are significant, reduce this by ordering on the adjusted p-value (column Adj.P.Val).  
+
+Then update the ijc and sjc matrices and the merged.table (annotations)
+
 
 ```{r}
-dim(skip.counts)
-skip.counts  <- skip.counts[rownames(skip.counts) %in% merged.table$ID,]
-dim(skip.counts)
-```
-
-```{r}
-dim(inc.counts)
-inc.counts   <- inc.counts[rownames(inc.counts) %in% merged.table$ID,]
-dim(inc.counts)
-```
-
-```{r}
-nrow(skip.counts)>100
-```
-
-```{r}
-if (nrow(skip.counts)>100)
-{
-  select.events <- apply(inc.counts,1,sd)+apply(skip.counts,1,sd)>sd.threshold
-  inc.counts    <- inc.counts[select.events,]
-  skip.counts   <- skip.counts[select.events,]
-  merged.table  <- merged.table[select.events,]
+if (nrow(se.jc.sjc.counts) > 100 ) {
+    head(merged.table,2)
+    dim(merged.table)
+    order_by_adj.P.Val <- order(merged.table$adj.P.Val,decreasing=TRUE)
+    head(merged.table[order_by_adj.P.Val,],2)
+    keep_IDs <- merged.table[order_by_adj.P.Val,]$ID[1:100]
+    head(keep_IDs)
+    keep_IDs <- keep_IDs[order(keep_IDs, decreasing=FALSE)]
+    head(keep_IDs)
+    # counts table will be identical in rows
+    counts.keep <- as.character(rownames(se.jc.sjc.counts)) %in% as.character(keep_IDs)
+    table(counts.keep)
+    # not so sure about merged.table - so lets have a different logical key
+    merged.keep <- as.character(merged.table$ID) %in% as.character(keep_IDs)
+    table(merged.keep)
+    
+    # update the sjc counts 
+    dim(se.jc.sjc.counts)
+    se.jc.sjc.counts  <- se.jc.sjc.counts[counts.keep,]
+    dim(se.jc.sjc.counts)
+ 
+    # update the ijc counts
+    dim(se.jc.ijc.counts)
+    se.jc.ijc.counts   <- se.jc.ijc.counts[counts.keep,]
+    dim(se.jc.ijc.counts)
+    
+    # merged table
+    dim(merged.table)
+    merged.table       <- merged.table[merged.keep,] 
+    dim(merged.table)
 }
 ```
 
 ```{r}
-dim(inc.counts)
-dim(skip.counts)
+dim(se.jc.ijc.counts)
+dim(se.jc.sjc.counts)
 dim(merged.table)
 ```
 
@@ -495,19 +513,19 @@ dim(meta.data)
 ```
 
 ```{r}
-inc.counts <- inc.counts[,colnames(inc.counts) %in% meta.data$SRR]
-dim(inc.counts)
-inc.counts[1:2,1:4]
+se.jc.ijc.counts <- se.jc.ijc.counts[,colnames(se.jc.ijc.counts) %in% meta.data$SRR]
+dim(se.jc.ijc.counts)
+se.jc.ijc.counts[1:2,1:4]
 ```
 
 ```{r}
-skip.counts <- skip.counts[,colnames(skip.counts) %in% meta.data$SRR]
-dim(skip.counts)
-skip.counts[1:2,1:4]
+se.jc.sjc.counts <- se.jc.sjc.counts[,colnames(se.jc.sjc.counts) %in% meta.data$SRR]
+dim(se.jc.sjc.counts)
+se.jc.sjc.counts[1:2,1:4]
 ```
 
 ```{r}
-meta.data <- meta.data[meta.data$SRR %in% colnames(inc.counts),]
+meta.data <- meta.data[meta.data$SRR %in% colnames(se.jc.ijc.counts),]
 dim(meta.data)
 meta.data[1:2,1:8]
 ```
@@ -567,13 +585,13 @@ dim(expression.mat)
 ```
 
 ```{r}
-inc.counts     <- inc.counts[,order(match(colnames(inc.counts),meta.data$SRR))]
-dim(inc.counts)
+se.jc.ijc.counts     <- se.jc.ijc.counts[,order(match(colnames(se.jc.ijc.counts),meta.data$SRR))]
+dim(se.jc.ijc.counts)
 ```
 
 ```{r}
-skip.counts    <- skip.counts[,order(match(colnames(skip.counts),meta.data$SRR))]
-dim(skip.counts)
+se.jc.sjc.counts    <- se.jc.sjc.counts[,order(match(colnames(se.jc.sjc.counts),meta.data$SRR))]
+dim(se.jc.sjc.counts)
 ```
 
 ```{r}
@@ -594,13 +612,13 @@ dim(all.genes)
 ```
 
 ```{r}
-skip.counts    <- skip.counts[merged.table$geneSymbol %in% all.genes$Description,]
-dim(skip.counts)
+se.jc.sjc.counts    <- se.jc.sjc.counts[merged.table$geneSymbol %in% all.genes$Description,]
+dim(se.jc.sjc.counts)
 ```
 
 ```{r}
-inc.counts     <- inc.counts[merged.table$geneSymbol %in% all.genes$Description,]
-dim(inc.counts)
+se.jc.ijc.counts     <- se.jc.ijc.counts[merged.table$geneSymbol %in% all.genes$Description,]
+dim(se.jc.ijc.counts)
 ```
 
 ```{r}
@@ -631,6 +649,10 @@ dim(expression.mat)
 ```{r}
 rownames.expression.mat <-rownames.expression.mat[!duplicated(rownames.expression.mat)]
 length(rownames.expression.mat)
+```
+
+```{r}
+
 ```
 
 ## Prepare expression of genes and RBPS:
@@ -715,8 +737,8 @@ end_time - start_time
 
 ```{r}
 dataList = list(
-  as = round(skip.counts) ,   #skip event counts across experiments
-  c = round(skip.counts+inc.counts)    , #total counts for event, i.e. skip+inclusion, across experiments
+  as = round(se.jc.sjc.counts) ,   #sjc event counts across experiments
+  c = round(se.jc.sjc.counts+se.jc.ijc.counts)    , #total counts for event, i.e. sjc & ijc, across experiments
   gexp = gexp, #read counts for genes (from gtex, take the raw counts) across experiments
   rexp = rexp, #read counts for RBPs (from gtex, take the raw counts)
   event_to_gene = event.to.gene,  #the gene index for each event (1 to the number of distinct genes) 
