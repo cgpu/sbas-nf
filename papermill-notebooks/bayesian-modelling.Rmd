@@ -27,11 +27,11 @@ Before starting the execution of the following code, make sure you have availabl
 ###  **`sbas/data`**.
 The present analysis requires the following files to be present in the folder **`sbas/data`** uncompressed as the filenames indicate below:
 
-- [x] `fromGTF.{splice_type}.txt`
+- [x] `fromGTF.{as_site_type}.txt`
 - [x] `GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct`
-- [x] `rmats_final.{splice_type}.jc.ijc.txt`
-- [x] `rmats_final.{splice_type}.jc.sjc.txt`
-- [x] `limma::topTable()` dataframes written as csv, filenames shsould follow the convention: `se_{tissue_name}_AS_model_B_sex_as_events.csv`
+- [x] `rmats_final.{as_site_type}.jc.ijc.txt`
+- [x] `rmats_final.{as_site_type}.jc.sjc.txt`
+- [x] `limma::topTable()` dataframes written as csv, filenames shsould follow the convention: `{as_site_type}_{tissue_name}_AS_model_B_sex_as_events.csv`
 - [x] `srr_pdata.csv`: the corrected GTEx data as created by the forked yarn and in the `annes-changes` branch https://github.com/TheJacksonLaboratory/yarn/tree/annes-changes with the SRR data as used in the `rMATS 3.2.5` experiment.
 
 ### **`sbas/assets`**
@@ -52,8 +52,8 @@ Before running the notebook, one can unpack the contents of the archives in the 
 
 ```bash
 # git clone https://github.com/TheJacksonLaboratory/sbas-nf
-tar xvzf data_bayesian_se_AS_model_B_sex_as_events.tar.gz -C data/
-tar xvzf assets_bayesian_se_AS_model_B_sex_as_events.tar.gz -C assets/
+tar xvzf data_bayesian_{as_site_type}_AS_model_B_sex_as_events.tar.gz -C data/
+tar xvzf assets_bayesian_{as_site_type}_AS_model_B_sex_as_events.tar.gz -C assets/
 
 ```
 
@@ -129,9 +129,9 @@ cat(tissue.list, sep = "\n")
 ```
 
 ```{r}
-splice_types <- c("a3ss", "a5ss", "mxe", "ri", "se")
+as_site_types <- c("a3ss", "a5ss", "mxe", "ri", "se")
 message("splice types are : ")
-splice_types
+as_site_types
 ```
 
 ## Two parameters set and unset for debugging, set externally for nextflow execution of notebook, splice_index and tissue_index
@@ -141,12 +141,12 @@ splice_types
 tissue_index = 17
 splice_index = 5
 tissue      <- tissue.list[tissue_index]  #can be replaced with a loop or argument to choose a different tissue
-splice_type <- splice_types[splice_index] #can be replaced with a loop or argument to choose a different splice_type
+as_site_type <- as_site_types[splice_index] #can be replaced with a loop or argument to choose a different as_site_type
 ```
 
 ```{r}
 tissue
-splice_type
+as_site_type
 ```
 
 ## Pattern for choosing `topTable()` files from `limma`
@@ -159,7 +159,7 @@ se_skin_not_sun_exposed_suprapubic_AS_model_B_sex_as_events.csv
 ```{r}
 dataDir <- "../data/"
 assetsDir <- "../assets/"
-as_site_type <- splice_type
+as_site_type <- as_site_type
 suffix_pattern <- "AS_model_B_sex_as_events_refined.csv"
 
 file.with.de.results <- paste0(dataDir, as_site_type, "_", tissue, "_" , suffix_pattern  )
@@ -242,19 +242,19 @@ file.exists(rbp.table.name)
 ```
 
 ```{r}
-events.table.name     <- paste0(paste0(paste0(dataDir, "fromGTF."), snakecase::to_upper_lower_case(splice_type)),".txt")
+events.table.name     <- paste0(paste0(paste0(dataDir, "fromGTF."), snakecase::to_upper_lower_case(as_site_type)),".txt")
 events.table.name
 file.exists(events.table.name)
 ```
 
 ```{r}
-inc.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), splice_type),".jc.ijc.txt.gz")
+inc.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), as_site_type),".jc.ijc.txt.gz")
 inc.counts.file.name
 file.exists(inc.counts.file.name)
 ```
 
 ```{r}
-skip.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), splice_type),".jc.sjc.txt.gz")
+skip.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), as_site_type),".jc.sjc.txt.gz")
 skip.counts.file.name
 file.exists(skip.counts.file.name)
 ```
@@ -322,7 +322,7 @@ dim(rbp.table)
 head(rbp.table, 1)
 ```
 
-Make sure this command has been executed before `gunzip sbas/data/rmats_final.{splice_type}.jc.*jc.*` as the files are expected uncompressed.
+Make sure this command has been executed before `gunzip sbas/data/rmats_final.{as_site_type}.jc.*jc.*` as the files are expected uncompressed.
 
 
 ```{r}
