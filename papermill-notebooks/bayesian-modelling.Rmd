@@ -129,12 +129,6 @@ cat(tissue.list, sep = "\n")
 ```
 
 ```{r}
-as_site_types <- c("a3ss", "a5ss", "mxe", "ri", "se")
-message("splice types are : ")
-as_site_types
-```
-
-```{r}
 tissue      <- tissue.list[tissue_index]    #can be replaced with a loop or argument to choose a different tissue
 as_site_type #can be replaced with a loop or argument to choose a different as_site_type
 ```
