@@ -27,8 +27,8 @@ Before starting the execution of the following code, make sure you have availabl
 ###  **`sbas/data`**.
 The present analysis requires the following files to be present in the folder **`sbas/data`** uncompressed as the filenames indicate below:
 
-- [x] `GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct`
 - [x] `fromGTF.{splice_type}.txt`
+- [x] `GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct`
 - [x] `rmats_final.{splice_type}.jc.ijc.txt`
 - [x] `rmats_final.{splice_type}.jc.sjc.txt`
 - [x] `*_model_B_sex_as_events*`
