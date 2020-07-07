@@ -148,7 +148,6 @@ se_skin_not_sun_exposed_suprapubic_AS_model_B_sex_as_events.csv
 ```{r}
 dataDir <- "../data/"
 assetsDir <- "../assets/"
-as_site_type <- as_site_type
 suffix_pattern <- "AS_model_B_sex_as_events_refined.csv"
 
 file.with.de.results <- paste0(dataDir, as_site_type, "_", tissue, "_" , suffix_pattern  )
