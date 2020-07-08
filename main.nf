@@ -159,7 +159,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     script:
     as_site_type_option = params.as_site_type ? "-p as_site_type ${params.as_site_type}" : ''
     top_n_events_option = params.as_site_type ? "-p top_n_events ${params.top_n_events}" : ''
-    extra_pmill_params  = as_site_type_option + '' + top_n_events_option
+    extra_pmill_params  = as_site_type_option + ' ' + top_n_events_option
     """
     mkdir -p jupyter
     mkdir -p data
