@@ -241,13 +241,13 @@ file.exists(events.table.name)
 ```
 
 ```{r}
-inc.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), as_site_type),".jc.ijc.txt.gz")
+inc.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), as_site_type),".jc.ijc.txt")
 inc.counts.file.name
 file.exists(inc.counts.file.name)
 ```
 
 ```{r}
-skip.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), as_site_type),".jc.sjc.txt.gz")
+skip.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), as_site_type),".jc.sjc.txt")
 skip.counts.file.name
 file.exists(skip.counts.file.name)
 ```
