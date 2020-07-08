@@ -5,7 +5,7 @@ jupyter:
       extension: .Rmd
       format_name: rmarkdown
       format_version: '1.2'
-      jupytext_version: 1.4.1
+      jupytext_version: 1.5.0
   kernelspec:
     display_name: R
     language: R
@@ -27,13 +27,12 @@ Before starting the execution of the following code, make sure you have availabl
 ###  **`sbas/data`**.
 The present analysis requires the following files to be present in the folder **`sbas/data`** uncompressed as the filenames indicate below:
 
-- [x] `fromGTF.SE.txt`
+- [x] `fromGTF.{as_site_type}.txt`
 - [x] `GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct`
-- [x] `rmats_final.se.jc.ijc.txt`
-- [x] `rmats_final.se.jc.sjc.txt`
-- [x] `limma::topTable()` dataframes written as csv, filenames shsould follow the convention: `se_{tissue_name}_AS_model_B_sex_as_events.csv`
+- [x] `rmats_final.{as_site_type}.jc.ijc.txt`
+- [x] `rmats_final.{as_site_type}.jc.sjc.txt`
+- [x] `limma::topTable()` dataframes written as csv, filenames shsould follow the convention: `{as_site_type}_{tissue_name}_AS_model_B_sex_as_events.csv`
 - [x] `srr_pdata.csv`: the corrected GTEx data as created by the forked yarn and in the `annes-changes` branch https://github.com/TheJacksonLaboratory/yarn/tree/annes-changes with the SRR data as used in the `rMATS 3.2.5` experiment.
-
 
 ### **`sbas/assets`**
 The present analysis requires the following files to be present in the folder **`sbas/assets`**.
@@ -49,12 +48,12 @@ gs://robinson-bucket/notebooks/bayesian-modeling/data_bayesian_se_AS_model_B_sex
 gs://robinson-bucket/notebooks/bayesian-modeling/assets_bayesian_se_AS_model_B_sex_as_events.tar.gz
 ```
 
-Before running the notebook, one can unpack the contents of the archives in the `sbas/data` folder as required by executing the following commands:
+Before running the notebook, one can unpack the contents of the archives in the `sbas-nf/data` folder as required by executing the following commands:
 
 ```bash
-# git clone https://github.com/TheJacksonLaboratory/sbas
-tar xvzf data_bayesian_se_AS_model_B_sex_as_events.tar.gz -C data/
-tar xvzf assets_bayesian_se_AS_model_B_sex_as_events.tar.gz -C assets/
+# git clone https://github.com/TheJacksonLaboratory/sbas-nf
+tar xvzf data_bayesian_{as_site_type}_AS_model_B_sex_as_events.tar.gz -C data/
+tar xvzf assets_bayesian_{as_site_type}_AS_model_B_sex_as_events.tar.gz -C assets/
 
 ```
 
@@ -130,11 +129,13 @@ cat(tissue.list, sep = "\n")
 ```
 
 ```{r}
-tissue <- tissue.list[tissue_index]  #can be replaced with a loop or argument to choose a different tissue
+tissue      <- tissue.list[tissue_index]    #can be replaced with a loop or argument to choose a different tissue
+as_site_type #can be replaced with a loop or argument to choose a different as_site_type
 ```
 
 ```{r}
 tissue
+as_site_type
 ```
 
 ## Pattern for choosing `topTable()` files from `limma`
@@ -145,9 +146,10 @@ se_skin_not_sun_exposed_suprapubic_AS_model_B_sex_as_events.csv
 ```
 
 ```{r}
+tissue
 dataDir <- "../data/"
 assetsDir <- "../assets/"
-as_site_type <- "se"
+as_site_type
 suffix_pattern <- "AS_model_B_sex_as_events.csv"
 
 file.with.de.results <- paste0(dataDir, as_site_type, "_", tissue, "_" , suffix_pattern  )
@@ -155,6 +157,9 @@ file.with.de.results
 file.exists(file.with.de.results)
 system( paste0("ls -l ", file.with.de.results), intern = TRUE )
 ```
+
+**NOTE**:
+The parameters `tissue_index` and `as_site_type` will be passed from papermill and added in the fist chunk of the notebook upon execution. Do not assign to a hardcoded value anywhere in the notebook, as they will ovewrite the assignment in the first chunk.
 
 ```{r}
 events.table         <- read.table(file.with.de.results, sep = ",")
@@ -230,17 +235,20 @@ file.exists(rbp.table.name)
 ```
 
 ```{r}
-events.table.name     <- paste0(dataDir, "fromGTF.SE.txt")
+events.table.name     <- paste0(paste0(paste0(dataDir, "fromGTF."), snakecase::to_upper_lower_case(as_site_type)),".txt")
+events.table.name
 file.exists(events.table.name)
 ```
 
 ```{r}
-inc.counts.file.name  <- paste0(dataDir, "rmats_final.se.jc.ijc.txt")
+inc.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), as_site_type),".jc.ijc.txt")
+inc.counts.file.name
 file.exists(inc.counts.file.name)
 ```
 
 ```{r}
-skip.counts.file.name <- paste0(dataDir, "rmats_final.se.jc.sjc.txt")
+skip.counts.file.name  <- paste0(paste0(paste0(dataDir, "rmats_final."), as_site_type),".jc.sjc.txt")
+skip.counts.file.name
 file.exists(skip.counts.file.name)
 ```
 
@@ -257,7 +265,7 @@ file.exists(expression.file.name)
 ## Use the define filepaths to load/read in the tables 
 
 
-Load the skip and inclusion count matrices, and the list of RNA binding proteins that are annotated to either:
+Load the sjc and sjc count matrices, and the list of RNA binding proteins that are annotated to either:
 - mRNA splicing, via spliceosome `(GO:0000398)`,
 - regulation of mRNA splicing, via spliceosome `(GO:0048024)`, or 
 - both. 
@@ -307,7 +315,7 @@ dim(rbp.table)
 head(rbp.table, 1)
 ```
 
-Make sure this command has been executed before `gunzip sbas/data/rmats_final.se.jc.*jc.*` as the files are expected uncompressed.
+Make sure this command has been executed before `gunzip sbas/data/rmats_final.{as_site_type}.jc.*jc.*` as the files are expected uncompressed.
 
 
 ```{r}
@@ -388,34 +396,44 @@ skip.counts  <- skip.counts[,colnames(skip.counts) %in% meta.data$SRR]
 dim(skip.counts)
 ```
 
-```{r}
-sd.threshold <- quantile(apply(inc.counts,1,sd)+apply(skip.counts,1,sd),0.95)
-sd.threshold
-```
+## This notebook only signficant events are used - filtering now on Adj.P Val
+
+If there are more than 100 events that are significant, reduce this by ordering on the adjusted p-value (column Adj.P.Val).  
+
+Then update the ijc and sjc matrices and the merged.table (annotations)
+
 
 ```{r}
-dim(skip.counts)
-skip.counts  <- skip.counts[rownames(skip.counts) %in% merged.table$ID,]
-dim(skip.counts)
-```
-
-```{r}
-dim(inc.counts)
-inc.counts   <- inc.counts[rownames(inc.counts) %in% merged.table$ID,]
-dim(inc.counts)
-```
-
-```{r}
-nrow(skip.counts)>100
-```
-
-```{r}
-if (nrow(skip.counts)>100)
-{
-  select.events <- apply(inc.counts,1,sd)+apply(skip.counts,1,sd)>sd.threshold
-  inc.counts    <- inc.counts[select.events,]
-  skip.counts   <- skip.counts[select.events,]
-  merged.table  <- merged.table[select.events,]
+if (nrow(skip.counts) > 100 ) {
+    head(merged.table,2)
+    dim(merged.table)
+    order_by_adj.P.Val <- order(merged.table$adj.P.Val,decreasing=TRUE)
+    head(merged.table[order_by_adj.P.Val,],2)
+    keep_IDs <- merged.table[order_by_adj.P.Val,]$ID[1:100]
+    head(keep_IDs)
+    keep_IDs <- keep_IDs[order(keep_IDs, decreasing=FALSE)]
+    head(keep_IDs)
+    # counts table will be identical in rows
+    counts.keep <- as.character(rownames(skip.counts)) %in% as.character(keep_IDs)
+    table(counts.keep)
+    # not so sure about merged.table - so lets have a different logical key
+    merged.keep <- as.character(merged.table$ID) %in% as.character(keep_IDs)
+    table(merged.keep)
+    
+    # update the sjc counts 
+    dim(skip.counts)
+    skip.counts  <- skip.counts[counts.keep,]
+    dim(skip.counts)
+ 
+    # update the ijc counts
+    dim(inc.counts)
+    inc.counts   <- inc.counts[counts.keep,]
+    dim(inc.counts)
+    
+    # merged table
+    dim(merged.table)
+    merged.table       <- merged.table[merged.keep,] 
+    dim(merged.table)
 }
 ```
 
@@ -715,8 +733,8 @@ end_time - start_time
 
 ```{r}
 dataList = list(
-  as = round(skip.counts) ,   #skip event counts across experiments
-  c = round(skip.counts+inc.counts)    , #total counts for event, i.e. skip+inclusion, across experiments
+  as = round(skip.counts) ,   #sjc event counts across experiments
+  c = round(skip.counts+inc.counts)    , #total counts for event, i.e. sjc & ijc, across experiments
   gexp = gexp, #read counts for genes (from gtex, take the raw counts) across experiments
   rexp = rexp, #read counts for RBPs (from gtex, take the raw counts)
   event_to_gene = event.to.gene,  #the gene index for each event (1 to the number of distinct genes) 
