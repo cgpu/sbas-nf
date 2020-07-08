@@ -150,7 +150,7 @@ tissue
 dataDir <- "../data/"
 assetsDir <- "../assets/"
 as_site_type
-suffix_pattern <- "AS_model_B_sex_as_events_refined.csv"
+suffix_pattern <- "AS_model_B_sex_as_events.csv"
 
 file.with.de.results <- paste0(dataDir, as_site_type, "_", tissue, "_" , suffix_pattern  )
 file.with.de.results
