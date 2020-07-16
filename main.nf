@@ -150,6 +150,7 @@ if (params.tissues_csv.endsWith(".csv")) {
     file("metadata/*rds") optional true
     file("assets/*tsv") optional true
     file("jupyter/*.ipynb") optional true
+    file("jupyter/*.csv") optional true
     file("*.ipynb") optional true
     file("jupyter/*.RData") optional true
     file("*.RData") optional true
