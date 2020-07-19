@@ -7,5 +7,12 @@ data/*
 .Rhistory
 .Rdata
 .DS_Store
+.nextflow
+*.out
+*.err
 manifest.json
 **/*.gz
+work/*
+trace.txt
+nextflow
+.nextflow.log*
