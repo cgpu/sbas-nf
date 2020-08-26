@@ -100,7 +100,8 @@ if (params.tissues_csv.endsWith(".csv")) {
     machineType 'n1-standard-16'
     tag "${tissue_index}-${tissue_name}"
     publishDir "results/differential/per_tissue/${tissue_name}/"
-    publishDir "results/differential/all_tissues/"
+    publishDir "results/differential/all_tissues/pdf",  pattern: '*.pdf
+    publishDir "results/differential/all_tissues/csv",  pattern: '*.csv'
     publishDir "results/differential/notebooks_rdata/" , pattern: '*.Rdata', saveAs: { filename -> "${tissue_name}_diff_splicing_$filename" }
     publishDir "results/differential/output_notebooks/", pattern: '*_diff_splicing.ipynb'
 
