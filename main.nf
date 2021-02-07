@@ -92,160 +92,171 @@ if (params.tissues_csv.endsWith(".csv")) {
  *          PROCESSES            *
  *********************************/
 
+  process check_resources {
+
+    script:
+    """
+    metadata_item="machine-type"
+    machine_type=`curl "http://169.254.169.254/computeMetadata/v1/instance/\${metadata_item}" -H "Metadata-Flavor: Google" | awk -F/ '{print \$NF}'`
+    echo \${machine_type}
+    """
+}
+
+if (!params.skip_execution) {
+  
 /*
  * Execute the notebook for each tissue
  */
+  process runNotebook {
+      tag "${tissue_index}-${tissue_name}"
+      publishDir "results/differential/per_tissue/${tissue_name}/"
+      publishDir "results/differential/all_tissues/pdf",  pattern: '*.pdf'
+      publishDir "results/differential/all_tissues/csv",  pattern: '*.csv'
+      publishDir "results/differential/notebooks_rdata/" , pattern: '*.Rdata', saveAs: { filename -> "${tissue_name}_diff_splicing_$filename" }
+      publishDir "results/differential/output_notebooks/", pattern: '*_diff_splicing.ipynb'
 
- process runNotebook {
-    tag "${tissue_index}-${tissue_name}"
-    publishDir "results/differential/per_tissue/${tissue_name}/"
-    publishDir "results/differential/all_tissues/pdf",  pattern: '*.pdf'
-    publishDir "results/differential/all_tissues/csv",  pattern: '*.csv'
-    publishDir "results/differential/notebooks_rdata/" , pattern: '*.Rdata', saveAs: { filename -> "${tissue_name}_diff_splicing_$filename" }
-    publishDir "results/differential/output_notebooks/", pattern: '*_diff_splicing.ipynb'
+      input:
+      set val(tissue_index), val(tissue_name) from ch_tissues_indices
+      each file(notebook) from ch_notebook
+      each file(data) from ch_data
+      each file(assets) from ch_assets
 
-    input:
-    set val(tissue_index), val(tissue_name) from ch_tissues_indices
-    each file(notebook) from ch_notebook
-    each file(data) from ch_data
-    each file(assets) from ch_assets
+      output:
+      set val(tissue_name), val('a3ss'), file("data/a3ss*${params.model}_gene_set.txt"), file("data/a3ss*${params.model}_universe.txt") into ch_ontologizer_a3ss
+      set val(tissue_name), val('a5ss'), file("data/a5ss*${params.model}_gene_set.txt"), file("data/a5ss*${params.model}_universe.txt") into ch_ontologizer_a5ss
+      set val(tissue_name), val('mxe'),  file("data/mxe*${params.model}_gene_set.txt"),  file("data/mxe*${params.model}_universe.txt")  into ch_ontologizer_mxe
+      set val(tissue_name), val('ri'),   file("data/ri*${params.model}_gene_set.txt"),   file("data/ri*${params.model}_universe.txt")   into ch_ontologizer_ri
+      set val(tissue_name), val('se'),   file("data/se*${params.model}_gene_set.txt"),   file("data/se*${params.model}_universe.txt")   into ch_ontologizer_se
+      set val(tissue_name), val('all_as_types'), file("data/*${params.model}*_universe.txt"), file("data/*${params.model}*_gene_set.txt") into ch_all_as_types_ontol_inputs
+      file "data/*csv"
+      file "pdf/"
+      file "metadata/"
+      file "assets/"
+      file "jupyter/${tissue_name}_diff_splicing.ipynb"
+      file("jupyter/notebook.RData") optional true
 
-    output:
-    set val(tissue_name), val('a3ss'), file("data/a3ss*${params.model}_gene_set.txt"), file("data/a3ss*${params.model}_universe.txt") into ch_ontologizer_a3ss
-    set val(tissue_name), val('a5ss'), file("data/a5ss*${params.model}_gene_set.txt"), file("data/a5ss*${params.model}_universe.txt") into ch_ontologizer_a5ss
-    set val(tissue_name), val('mxe'),  file("data/mxe*${params.model}_gene_set.txt"),  file("data/mxe*${params.model}_universe.txt")  into ch_ontologizer_mxe
-    set val(tissue_name), val('ri'),   file("data/ri*${params.model}_gene_set.txt"),   file("data/ri*${params.model}_universe.txt")   into ch_ontologizer_ri
-    set val(tissue_name), val('se'),   file("data/se*${params.model}_gene_set.txt"),   file("data/se*${params.model}_universe.txt")   into ch_ontologizer_se
-    set val(tissue_name), val('all_as_types'), file("data/*${params.model}*_universe.txt"), file("data/*${params.model}*_gene_set.txt") into ch_all_as_types_ontol_inputs
-    file "data/*csv"
-    file "pdf/"
-    file "metadata/"
-    file "assets/"
-    file "jupyter/${tissue_name}_diff_splicing.ipynb"
-    file("jupyter/notebook.RData") optional true
+      script:
+      """
+      mkdir -p jupyter
+      mkdir -p data
+      mkdir -p pdf
+      mkdir -p metadata
+      mkdir -p assets
 
-    script:
-    """
-    mkdir -p jupyter
-    mkdir -p data
-    mkdir -p pdf
-    mkdir -p metadata
-    mkdir -p assets
+      tar xvzf $data -C data/
+      tar xvzf $assets -C assets/
 
-    tar xvzf $data -C data/
-    tar xvzf $assets -C assets/
+      cp $notebook jupyter/main.ipynb
+      cd jupyter
 
-    cp $notebook jupyter/main.ipynb
-    cd jupyter
+      papermill main.ipynb ${tissue_name}_diff_splicing.ipynb -p tissue_index $tissue_index
+      """
+  }
 
-    papermill main.ipynb ${tissue_name}_diff_splicing.ipynb -p tissue_index $tissue_index
-    """
-}
+  /*
+  * Create combined gene_set and universe from union of AS types for Ontologizer
+  */
 
+  process createAStypeUnions {
+      tag "${tissue}-${as_type}"
+      publishDir "results/AStypeUnions"
+      echo true
 
-/*
- * Create combined gene_set and universe from union of AS types for Ontologizer
- */
+      input:
+      set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_all_as_types_ontol_inputs
 
- process createAStypeUnions {
-    tag "${tissue}-${as_type}"
-    publishDir "results/AStypeUnions"
-    echo true
+      output:
+      set  val(tissue), val(as_type), file("${as_type}_${tissue}_${params.model}_gene_set.txt"), file("${as_type}_${tissue}_${params.model}_universe.txt") into ch_ontologizer_combined_as
 
-    input:
-    set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_all_as_types_ontol_inputs
+      when:  params.ontologizer
 
-    output:
-    set  val(tissue), val(as_type), file("${as_type}_${tissue}_${params.model}_gene_set.txt"), file("${as_type}_${tissue}_${params.model}_universe.txt") into ch_ontologizer_combined_as
+      script:
+      """
+      ls *.* | grep $tissue | grep universe | grep ${params.model} | xargs cat | sort | uniq > ${as_type}_${tissue}_${params.model}_universe.txt
+      ls *.* | grep $tissue | grep gene_set | grep ${params.model} | xargs cat | sort | uniq > ${as_type}_${tissue}_${params.model}_gene_set.txt
+      ls -l *
+      """
+  }
 
-    when:  params.ontologizer
+  ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_mxe, ch_ontologizer_ri, ch_ontologizer_se, ch_ontologizer_combined_as)
 
-    script:
-    """
-    ls *.* | grep $tissue | grep universe | grep ${params.model} | xargs cat | sort | uniq > ${as_type}_${tissue}_${params.model}_universe.txt
-    ls *.* | grep $tissue | grep gene_set | grep ${params.model} | xargs cat | sort | uniq > ${as_type}_${tissue}_${params.model}_gene_set.txt
-    ls -l *
-    """
-}
+  /*
+  * Perform Gene Ontology analysis with Ontologizer
+  */
 
-ch_ontologizer = ch_ontologizer_a3ss.concat(ch_ontologizer_a5ss, ch_ontologizer_mxe, ch_ontologizer_ri, ch_ontologizer_se, ch_ontologizer_combined_as)
+  process ontologizer {
+      tag "${as_type}-${tissue}"
+      label 'ontologizer'
+      publishDir "results/ontologizer/files/${as_type}"
+      echo true
 
-/*
- * Perform Gene Ontology analysis with Ontologizer
- */
+      input:
+      set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_ontologizer
+      each file(go_obo) from ch_obo_file
+      each file(goa_human_gaf) from ch_go_annotation_file
 
- process ontologizer {
-    tag "${as_type}-${tissue}"
-    label 'ontologizer'
-    publishDir "results/ontologizer/files/${as_type}"
-    echo true
+      output:
+      file("${tissue}/table*.txt") into ch_ontologizer_table
+      file("${tissue}/anno*.txt") into ch_ontologizer_anno
 
-    input:
-    set  val(tissue), val(as_type), file(gene_set), file(universe) from ch_ontologizer
-    each file(go_obo) from ch_obo_file
-    each file(goa_human_gaf) from ch_go_annotation_file
+      when:  params.ontologizer
 
-    output:
-    file("${tissue}/table*.txt") into ch_ontologizer_table
-    file("${tissue}/anno*.txt") into ch_ontologizer_anno
+      script:
+      """
+      ontologizer \
+      --studyset $gene_set \
+      --population $universe \
+      --go $go_obo \
+      --association $goa_human_gaf \
+      --calculation Term-For-Term \
+      --mtc Benjamini-Hochberg \
+      --outdir ${tissue} \
+      --annotation \
+      --dot
 
-    when:  params.ontologizer
+      ls -l *
+      """
+  }
 
-    script:
-    """
-    ontologizer \
-    --studyset $gene_set \
-    --population $universe \
-    --go $go_obo \
-    --association $goa_human_gaf \
-    --calculation Term-For-Term \
-    --mtc Benjamini-Hochberg \
-    --outdir ${tissue} \
-    --annotation \
-    --dot
+  process createArchives {
+      label 'ontologizer'
+      publishDir "results/ontologizer/archives/table", pattern: 'table-*.tar.gz'
+      publishDir "results/ontologizer/archives/annotation", pattern: 'anno-*.tar.gz'
 
-    ls -l *
-    """
-}
+      input:
+      file(table) from ch_ontologizer_table.collect()
+      file(anno) from ch_ontologizer_anno.collect()
 
- process createArchives {
-    label 'ontologizer'
-    publishDir "results/ontologizer/archives/table", pattern: 'table-*.tar.gz'
-    publishDir "results/ontologizer/archives/annotation", pattern: 'anno-*.tar.gz'
+      output:
+      file("*.tar.gz")
 
-    input:
-    file(table) from ch_ontologizer_table.collect()
-    file(anno) from ch_ontologizer_anno.collect()
+      when:  params.ontologizer
 
-    output:
-    file("*.tar.gz")
+      script:
+      """
+      # se
+      tar cvzf anno-se.tar.gz anno-se*
+      tar cvzf table-se.tar.gz table-se*
 
-    when:  params.ontologizer
+      # a3ss
+      tar cvzf anno-a3ss.tar.gz anno-a3ss*
+      tar cvzf table-a3ss.tar.gz table-a3ss*
 
-    script:
-    """
-    # se
-    tar cvzf anno-se.tar.gz anno-se*
-    tar cvzf table-se.tar.gz table-se*
+      # a5ss
+      tar cvzf anno-a5ss.tar.gz anno-a5ss*
+      tar cvzf table-a5ss.tar.gz table-a5ss*
 
-    # a3ss
-    tar cvzf anno-a3ss.tar.gz anno-a3ss*
-    tar cvzf table-a3ss.tar.gz table-a3ss*
+      # mxe
+      tar cvzf anno-mxe.tar.gz anno-mxe*
+      tar cvzf table-mxe.tar.gz table-mxe*
 
-    # a5ss
-    tar cvzf anno-a5ss.tar.gz anno-a5ss*
-    tar cvzf table-a5ss.tar.gz table-a5ss*
+      # ri
+      tar cvzf anno-ri.tar.gz anno-ri*
+      tar cvzf table-ri.tar.gz table-ri*
 
-    # mxe
-    tar cvzf anno-mxe.tar.gz anno-mxe*
-    tar cvzf table-mxe.tar.gz table-mxe*
-
-    # ri
-    tar cvzf anno-ri.tar.gz anno-ri*
-    tar cvzf table-ri.tar.gz table-ri*
-
-    # all_as_types
-    tar cvzf anno-all_as_types.tar.gz table-all_as_types*
-    tar cvzf table-all_as_types.tar.gz table-all_as_types*
-    """
+      # all_as_types
+      tar cvzf anno-all_as_types.tar.gz table-all_as_types*
+      tar cvzf table-all_as_types.tar.gz table-all_as_types*
+      """
+  }
 }
